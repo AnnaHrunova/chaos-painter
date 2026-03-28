@@ -1,10 +1,11 @@
+import { Color } from 'three';
 import type { ColorMode, ZAxisMode } from '../app/model';
 import { colorForSample, computeTrajectoryExtrema } from '../lib/color';
 import type { TrajectorySeries } from '../physics/types';
 
 export interface Trajectory3DData {
   points: [number, number, number][];
-  colors: string[];
+  colors: [number, number, number][];
   currentPoint: [number, number, number];
 }
 
@@ -37,8 +38,13 @@ export function buildTrajectory3DData(
     return [sample.p2.x * lengthScale, -sample.p2.y * lengthScale, z];
   });
 
-  const colors = visibleSamples.map((sample, index) =>
-    colorForSample(sample, index, total, colorMode, extrema),
+  const colors: [number, number, number][] = visibleSamples.map(
+    (sample, index) => {
+      const color = new Color(
+        colorForSample(sample, index, total, colorMode, extrema),
+      );
+      return [color.r, color.g, color.b];
+    },
   );
 
   return {
