@@ -1,0 +1,122 @@
+# Chaos Painter
+
+Chaos Painter is a browser-based laboratory for a chaotic double pendulum. It keeps the physics fixed, then lets you swap numerical integration methods and step sizes to see how the same system turns into different trajectories, different energy drift, and different visual art.
+
+The point is not to hide the math behind a physics engine. The point is to expose the approximation itself.
+
+## What the app does
+
+- Simulates a standard double pendulum with custom equations of motion
+- Implements Euler, RK2/Midpoint, and RK4 manually in code
+- Lets you tune initial angles, angular velocities, masses, rod lengths, gravity, dt, and simulation length
+- Renders the motion as:
+  - 2D pendulum view
+  - 2D trail view
+  - 3D extruded trail view
+  - chaos-art mode for long-form generative patterns
+- Compares Euler, RK2, and RK4 side by side with identical initial conditions
+- Shows energy drift and divergence metrics over time
+- Exports the current viewport as PNG
+- Runs entirely in the browser and can deploy as a static GitHub Pages site
+
+## Why the methods look different
+
+All three integrators approximate the same differential equations, but they introduce different truncation errors.
+
+- Euler is first-order. It is cheap and crude. With a chaotic system and a coarse `dt`, it quickly injects fake energy and noticeably distorts the motion.
+- RK2 / Midpoint is second-order. It behaves better than Euler, but still diverges from higher-quality solutions over longer horizons.
+- RK4 is fourth-order. For the same `dt`, it is usually the most faithful method in this app and tends to preserve the overall structure much better.
+
+Because the double pendulum is chaotic, even small numerical differences grow over time. That is the whole show.
+
+## Project structure
+
+```text
+src/
+  app/
+    model.ts            # UI-facing settings and conversions to simulation inputs
+    presets.ts          # Curated presets for illustration and art
+  components/
+    ControlsPanel.tsx   # Sidebar controls and preset launcher
+    StudioViewport.tsx  # Single-view workspace
+    ComparisonView.tsx  # Side-by-side method comparison
+    MetricsPanel.tsx    # Energy + divergence charts
+    TrajectoryCanvas2D.tsx
+    ThreeTrailView.tsx
+  integrators/
+    euler.ts
+    midpoint.ts
+    rk4.ts
+    index.ts
+  physics/
+    types.ts
+    pendulum.ts         # Equations of motion and kinematics
+    energy.ts           # Total energy + drift helpers
+    stateMath.ts        # State vector arithmetic for integrators
+  render/
+    canvas2d.ts         # 2D pendulum / trail drawing
+    trajectory3d.ts     # 2D dynamics projected into 3D
+  simulation/
+    simulateTrajectory.ts
+    comparison.ts
+```
+
+## Local development
+
+### Prerequisites
+
+- Node.js 20+
+- npm 10+
+
+### Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+The app will start on the Vite dev server.
+
+### Production build
+
+```bash
+npm run build
+```
+
+## GitHub Pages deployment
+
+The repo includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
+
+### Recommended setup
+
+1. Push the repository to GitHub.
+2. Ensure the default branch is `main`.
+3. In GitHub, open `Settings -> Pages`.
+4. Set the source to `GitHub Actions`.
+5. Push to `main` and the workflow will build and deploy `dist/`.
+
+`vite.config.ts` automatically derives the repository base path from `GITHUB_REPOSITORY` in production, which keeps asset URLs correct for GitHub Pages project sites.
+
+## Numerical notes
+
+- State vector: `[theta1, omega1, theta2, omega2]`
+- Equations: standard planar double pendulum equations
+- Physics and rendering are intentionally separated
+- The simulation precomputes trajectories when parameters change
+
+That last point is deliberate. Playback then becomes deterministic and repeatable, so what you are seeing is the integrator difference, not browser-frame jitter pretending to be science.
+
+## Suggested explorations
+
+- Keep the initial conditions fixed and switch between Euler, RK2, and RK4.
+- Increase `dt` until Euler starts bleeding energy hard.
+- Compare Euler vs RK4 and watch the trails separate.
+- Switch to 3D mode and use `z = time` or `z = energy drift`.
+- Use chaos-art mode with long trajectories and color by speed or energy drift.
+
+## Future extensions
+
+- Overlay comparison mode in a single viewport
+- Additional integrators such as symplectic or adaptive RK methods
+- CSV / JSON export of trajectories
+- Multi-seed ensemble visualizations

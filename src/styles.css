@@ -1,0 +1,469 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  color-scheme: dark;
+  font-family: 'Space Grotesk', sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(33, 68, 96, 0.35), transparent 32%),
+    radial-gradient(circle at 80% 20%, rgba(255, 122, 69, 0.12), transparent 24%),
+    linear-gradient(180deg, #050a11 0%, #07121c 38%, #050910 100%);
+  color: #edf4f8;
+  --surface: rgba(10, 18, 28, 0.84);
+  --surface-strong: rgba(7, 13, 21, 0.94);
+  --surface-soft: rgba(12, 23, 35, 0.72);
+  --border: rgba(156, 189, 214, 0.14);
+  --muted: #92afc5;
+  --accent: #5cf2ff;
+  --accent-warm: #ff7a45;
+  --accent-soft: #adc8ff;
+  --success: #a6ff9e;
+  --shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  color: #edf4f8;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 22px;
+  overflow: hidden;
+}
+
+.ambient {
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.ambient-a {
+  width: 340px;
+  height: 340px;
+  left: -80px;
+  top: -60px;
+  background: rgba(92, 242, 255, 0.14);
+}
+
+.ambient-b {
+  width: 320px;
+  height: 320px;
+  right: -60px;
+  top: 20%;
+  background: rgba(255, 122, 69, 0.12);
+}
+
+.app-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.controls-panel,
+.workspace-shell {
+  position: relative;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(12, 20, 31, 0.92), rgba(8, 14, 22, 0.92));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 28px;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+}
+
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 32px;
+  min-height: calc(100vh - 44px);
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.workspace-header h2,
+.panel-section-hero h1 {
+  margin: 4px 0 10px;
+  font-size: clamp(2rem, 1.4rem + 1.3vw, 3.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.workspace-header p,
+.panel-section-hero p,
+.field-note,
+.preset-card span,
+.summary-lines p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.panel-kicker,
+.section-title,
+.stat-chip span,
+.metric-card-header h3,
+.range-field span,
+.select-field span {
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.panel-kicker {
+  color: #8dd6ff;
+}
+
+.panel-section {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  border-radius: 22px;
+  padding: 14px;
+}
+
+.panel-section-hero {
+  background:
+    linear-gradient(135deg, rgba(92, 242, 255, 0.08), rgba(255, 122, 69, 0.05)),
+    rgba(11, 20, 31, 0.9);
+}
+
+.section-title {
+  color: #d7e8f5;
+  margin-bottom: 12px;
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.playback-row,
+.status-row,
+.hero-stats,
+.comparison-meta,
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primary-button,
+.ghost-button,
+.segment,
+.preset-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.primary-button:hover,
+.ghost-button:hover,
+.segment:hover,
+.preset-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(176, 214, 236, 0.28);
+}
+
+.primary-button {
+  background: linear-gradient(135deg, rgba(92, 242, 255, 0.18), rgba(92, 242, 255, 0.08));
+  color: #effbff;
+  padding: 10px 14px;
+}
+
+.ghost-button {
+  background: rgba(255, 255, 255, 0.03);
+  color: #dce8f3;
+  padding: 10px 14px;
+}
+
+.status-pill,
+.stat-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.status-pill {
+  padding: 7px 10px;
+  color: #cfe1ee;
+  font-size: 0.78rem;
+}
+
+.status-pill-live {
+  border-color: rgba(92, 242, 255, 0.35);
+  color: #eaffff;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.segment {
+  background: rgba(255, 255, 255, 0.02);
+  color: #bed4e6;
+  padding: 10px 12px;
+}
+
+.segment-active {
+  background: linear-gradient(135deg, rgba(92, 242, 255, 0.14), rgba(92, 242, 255, 0.06));
+  color: #f4fcff;
+}
+
+.select-field,
+.range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.select-field select,
+.range-number {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef5fa;
+  padding: 10px 12px;
+}
+
+.range-field-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.range-number {
+  width: 92px;
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.preset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+}
+
+.capture-shell {
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(8, 13, 21, 0.86), rgba(6, 10, 17, 0.92)),
+    rgba(0, 0, 0, 0.24);
+  border-radius: 28px;
+  padding: 16px;
+}
+
+.viewport-card,
+.comparison-card,
+.metric-card {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: rgba(10, 17, 27, 0.8);
+  overflow: hidden;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.trajectory-canvas,
+.three-shell,
+.comparison-card canvas {
+  display: block;
+  width: 100%;
+  height: min(62vh, 640px);
+}
+
+.comparison-card canvas {
+  height: min(42vh, 360px);
+}
+
+.comparison-meta {
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.hero-stats {
+  justify-content: flex-end;
+}
+
+.stat-chip {
+  min-width: 112px;
+  padding: 10px 14px;
+}
+
+.stat-chip strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1rem;
+  color: #f3fbff;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metric-card {
+  padding: 16px;
+}
+
+.metric-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.metric-card-header h3 {
+  margin: 0;
+  color: #d8e8f5;
+}
+
+.summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+}
+
+.chart-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 210px;
+  display: block;
+}
+
+.empty-state {
+  min-height: 340px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  border-radius: 22px;
+  border: 1px dashed rgba(156, 189, 214, 0.16);
+}
+
+@media (max-width: 1280px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .controls-panel {
+    max-height: none;
+  }
+
+  .comparison-grid,
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .workspace-shell,
+  .controls-panel {
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .workspace-header {
+    flex-direction: column;
+  }
+
+  .preset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trajectory-canvas,
+  .three-shell,
+  .comparison-card canvas {
+    height: 52vh;
+  }
+}
+
