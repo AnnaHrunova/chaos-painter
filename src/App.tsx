@@ -245,11 +245,12 @@ export default function App() {
           <section className="phenomenon-note">
             <div className="panel-kicker">What You Are Seeing</div>
             <p>
-              The double pendulum is a classic chaotic system: its motion is fully
-              deterministic, but tiny differences in initial conditions or
-              numerical approximation grow rapidly over time. That makes it a good
-              microscope for both real sensitivity and fake artifacts introduced by
-              coarse integration.
+              Двойной маятник - классическая хаотическая система: её движение
+              полностью детерминировано, но крошечные различия в начальных
+              условиях или численном приближении быстро нарастают со временем.
+              Поэтому он отлично показывает и реальную чувствительность к
+              малым изменениям, и ложные артефакты, которые вносит грубая
+              интеграция.
             </p>
           </section>
 

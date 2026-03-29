@@ -48,9 +48,9 @@ export function ControlsPanel({
           does its delightful dirty work.
         </p>
         <p className="hero-note">
-          A double pendulum is a simple deterministic system with extreme
-          sensitivity to small changes. Tiny differences in state or numerical
-          method grow into visibly different motion.
+          Двойной маятник - простая детерминированная система с экстремальной
+          чувствительностью к малым изменениям. Крошечные различия в состоянии
+          или численном методе быстро превращаются в заметно разное движение.
         </p>
         <div className="playback-row">
           <button className="primary-button" onClick={onTogglePlay} type="button">
@@ -82,15 +82,16 @@ export function ControlsPanel({
           options={workspaceModeOptions}
         />
         <p className="field-note">
-          Studio focuses on one solver at a time. Compare runs Euler, RK2, and
-          RK4 from the exact same setup so numerical error is easy to spot.
+          Studio показывает один метод за раз. Compare запускает Euler, RK2 и
+          RK4 на абсолютно одинаковых начальных условиях, чтобы численная
+          ошибка была видна сразу.
         </p>
         {settings.workspaceMode === 'studio' ? (
           <SelectField
             label="Viewport"
             value={settings.visualMode}
             options={visualModeOptions}
-            description="Choose whether to watch the rods directly, inspect the planar trail, or extrude the path into 3D."
+            description="Выбирает способ просмотра: сами стержни, плоский след траектории или 3D-экструзию пути."
             onChange={(value) => onChange({ visualMode: value as StudioSettings['visualMode'] })}
           />
         ) : (
@@ -110,12 +111,12 @@ export function ControlsPanel({
             label: `${integrator.shortLabel} · order ${integrator.order}`,
           }))}
           disabled={settings.workspaceMode === 'comparison'}
-          description="The same equations are integrated with different approximations. Lower-order methods are cheaper and usually drift harder."
+          description="Те же самые уравнения интегрируются разными приближениями. Методы низкого порядка дешевле, но обычно сильнее искажают результат."
           onChange={(value) => onChange({ methodId: value as StudioSettings['methodId'] })}
         />
         <p className="field-note">
           {settings.workspaceMode === 'comparison'
-            ? 'Comparison mode always runs Euler, RK2, and RK4 with the same setup.'
+            ? 'В режиме Comparison всегда одновременно считаются Euler, RK2 и RK4 на одном и том же наборе параметров.'
             : currentIntegrator?.description}
         </p>
       </Section>
@@ -128,7 +129,7 @@ export function ControlsPanel({
           step={0.001}
           value={settings.dt}
           digits={3}
-          description="Time step per integration update. Smaller dt usually improves stability and fidelity but needs more work."
+          description="Шаг времени на одно обновление интегратора. Меньший dt обычно даёт более устойчивый и точный результат, но требует больше вычислений."
           onChange={(value) => onChange({ dt: value })}
         />
         <RangeField
@@ -138,7 +139,7 @@ export function ControlsPanel({
           step={100}
           value={settings.steps}
           digits={0}
-          description="How long the trajectory is precomputed. Higher values show longer-term divergence and richer trail structures."
+          description="Насколько длинная траектория заранее просчитывается. Большие значения лучше показывают долгосрочное расхождение и сложные узоры."
           onChange={(value) => onChange({ steps: Math.round(value) })}
         />
         <RangeField
@@ -148,7 +149,7 @@ export function ControlsPanel({
           step={20}
           value={settings.trailWindow}
           digits={0}
-          description="How much of the recent path stays visible. Large values emphasize pattern formation, small values emphasize local motion."
+          description="Сколько последнего участка траектории остаётся видимым. Большие значения подчёркивают общий рисунок, маленькие - локальное движение."
           onChange={(value) => onChange({ trailWindow: Math.round(value) })}
         />
         <RangeField
@@ -158,7 +159,7 @@ export function ControlsPanel({
           step={1}
           value={settings.playbackStride}
           digits={0}
-          description="How many precomputed samples are advanced per animation frame. Higher stride makes playback jump faster through time."
+          description="Сколько заранее вычисленных точек проигрывается за один кадр анимации. Чем больше значение, тем быстрее время бежит вперёд."
           onChange={(value) => onChange({ playbackStride: Math.round(value) })}
         />
       </Section>
@@ -171,7 +172,7 @@ export function ControlsPanel({
           step={1}
           value={settings.theta1Deg}
           digits={0}
-          description="Initial angle of the first arm relative to vertical. This sets the starting geometry and initial potential energy."
+          description="Начальный угол первого звена относительно вертикали. Он задаёт стартовую геометрию системы и начальную потенциальную энергию."
           onChange={(value) => onChange({ theta1Deg: value })}
         />
         <RangeField
@@ -181,7 +182,7 @@ export function ControlsPanel({
           step={1}
           value={settings.theta2Deg}
           digits={0}
-          description="Initial angle of the second arm. Small changes here can explode into very different trajectories because the system is chaotic."
+          description="Начальный угол второго звена. Из-за хаотичности системы даже очень маленькое изменение здесь может привести к совсем другой траектории."
           onChange={(value) => onChange({ theta2Deg: value })}
         />
         <RangeField
@@ -191,7 +192,7 @@ export function ControlsPanel({
           step={0.01}
           value={settings.omega1}
           digits={2}
-          description="Initial angular velocity of the first arm. Positive and negative values kick the system in opposite rotational directions."
+          description="Начальная угловая скорость первого звена. Положительные и отрицательные значения закручивают систему в противоположные стороны."
           onChange={(value) => onChange({ omega1: value })}
         />
         <RangeField
@@ -201,7 +202,7 @@ export function ControlsPanel({
           step={0.01}
           value={settings.omega2}
           digits={2}
-          description="Initial angular velocity of the second arm. It changes how quickly the coupled motion becomes tangled."
+          description="Начальная угловая скорость второго звена. Она влияет на то, как быстро связанное движение станет запутанным."
           onChange={(value) => onChange({ omega2: value })}
         />
       </Section>
@@ -214,7 +215,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.m1}
           digits={2}
-          description="Mass of the first bob. Heavier values change the coupling and shift how energy moves through the system."
+          description="Масса первого груза. Более тяжёлое значение меняет характер связи между звеньями и перераспределение энергии в системе."
           onChange={(value) => onChange({ m1: value })}
         />
         <RangeField
@@ -224,7 +225,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.m2}
           digits={2}
-          description="Mass of the second bob. This strongly affects the lower arm's inertia and the shape of the resulting trail."
+          description="Масса второго груза. Она сильно влияет на инерцию нижнего звена и на форму итогового следа."
           onChange={(value) => onChange({ m2: value })}
         />
         <RangeField
@@ -234,7 +235,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.l1}
           digits={2}
-          description="Length of the first rod. Longer arms increase reach and alter the pendulum's natural time scale."
+          description="Длина первого стержня. Более длинное звено увеличивает размах движения и меняет естественный временной масштаб маятника."
           onChange={(value) => onChange({ l1: value })}
         />
         <RangeField
@@ -244,7 +245,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.l2}
           digits={2}
-          description="Length of the second rod. It changes the reachable geometry and the curvature density in the trail."
+          description="Длина второго стержня. Она меняет доступную геометрию движения и плотность кривизны в следе траектории."
           onChange={(value) => onChange({ l2: value })}
         />
         <RangeField
@@ -254,7 +255,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.g}
           digits={2}
-          description="Gravitational acceleration. Higher values pull the motion through its swings faster and intensify acceleration."
+          description="Ускорение свободного падения. Чем оно выше, тем быстрее система проходит через махи и тем сильнее ускорения."
           onChange={(value) => onChange({ g: value })}
         />
       </Section>
@@ -264,7 +265,7 @@ export function ControlsPanel({
           label="Color"
           value={settings.colorMode}
           options={colorModeOptions}
-          description="Map trail color to time, speed, energy drift, or angular velocity to reveal different structures in the same path."
+          description="Привязывает цвет следа ко времени, скорости, дрейфу энергии или угловой скорости, чтобы по-разному раскрывать структуру одной и той же траектории."
           onChange={(value) => onChange({ colorMode: value as StudioSettings['colorMode'] })}
         />
         {settings.visualMode === 'trail3d' ? (
@@ -272,7 +273,7 @@ export function ControlsPanel({
             label="3D depth"
             value={settings.zAxisMode}
             options={zAxisModeOptions}
-            description="Choose what the 3D extrusion means: elapsed time, instantaneous speed, or numerical energy drift."
+            description="Определяет смысл глубины в 3D: прошедшее время, мгновенная скорость или численный дрейф энергии."
             onChange={(value) => onChange({ zAxisMode: value as StudioSettings['zAxisMode'] })}
           />
         ) : null}
@@ -283,7 +284,7 @@ export function ControlsPanel({
           step={0.1}
           value={settings.lineWidth}
           digits={1}
-          description="Visual thickness of the rendered trajectory. Useful for balancing clarity versus glow in chaos-art mode."
+          description="Визуальная толщина линии траектории. Полезно для баланса между читаемостью и свечением в режиме chaos-art."
           onChange={(value) => onChange({ lineWidth: value })}
         />
       </Section>
