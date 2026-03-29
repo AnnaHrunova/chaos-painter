@@ -65,8 +65,10 @@ src/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22 LTS
 - npm 10+
+
+The repo includes `.nvmrc` and `.node-version` pinned to `22`, and the local shell on this machine is configured to prefer Homebrew `node@22`.
 
 ### Run locally
 
@@ -81,6 +83,20 @@ The app will start on the Vite dev server.
 
 ```bash
 npm run build
+```
+
+If your shell still picks the wrong Node version, verify with:
+
+```bash
+node --version
+npm --version
+```
+
+Expected output is roughly:
+
+```bash
+v22.x
+10.x
 ```
 
 ## GitHub Pages deployment

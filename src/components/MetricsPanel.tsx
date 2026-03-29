@@ -111,6 +111,8 @@ function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
   const palette: Record<TrajectorySeries['methodId'], string> = {
     euler: '#ff8b5a',
     midpoint: '#8fe1ff',
+    heun: '#ffd36e',
+    rk3: '#d7a8ff',
     rk4: '#a6ff9e',
   };
 
