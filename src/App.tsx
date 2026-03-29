@@ -6,9 +6,11 @@ import { MetricsPanel } from './components/MetricsPanel';
 import { StudioViewport } from './components/StudioViewport';
 import { defaultSettings, degreesToRadians, toInitialState, toPendulumParams } from './app/model';
 import { presets } from './app/presets';
-import { simulateComparisonTrajectories, computeDivergenceSeries } from './simulation/comparison';
-import { simulateTrajectory } from './simulation/simulateTrajectory';
 import type { MetricPoint, TrajectorySeries } from './physics/types';
+import type {
+  SimulationWorkerRequest,
+  SimulationWorkerResponse,
+} from './simulation/workerProtocol';
 
 export default function App() {
   const [settings, setSettings] = useState(defaultSettings);
@@ -21,58 +23,71 @@ export default function App() {
   const [isPending, setIsPending] = useState(true);
   const [generation, setGeneration] = useState(0);
   const captureRef = useRef<HTMLDivElement | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const latestRequestIdRef = useRef(0);
 
   useEffect(() => {
-    setIsPending(true);
+    const worker = new Worker(
+      new URL('./workers/simulationWorker.ts', import.meta.url),
+      { type: 'module' },
+    );
+    workerRef.current = worker;
 
+    worker.onmessage = (event: MessageEvent<SimulationWorkerResponse>) => {
+      const message = event.data;
+
+      if (message.requestId !== latestRequestIdRef.current) {
+        return;
+      }
+
+      if (message.type === 'error') {
+        console.error('Simulation worker failed:', message.message);
+        setIsPending(false);
+        return;
+      }
+
+      startTransition(() => {
+        setPrimaryTrajectory(message.primaryTrajectory);
+        setReferenceTrajectory(message.referenceTrajectory);
+        setComparisonTrajectories(message.comparisonTrajectories);
+        setSensitivitySeries(message.sensitivitySeries);
+        setFrameIndex(0);
+        setIsPending(false);
+      });
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!workerRef.current) {
+      return;
+    }
+
+    setIsPending(true);
     const initialState = toInitialState(settings);
     const params = toPendulumParams(settings);
-    const nextPrimary = simulateTrajectory({
-      initialState,
-      params,
-      dt: settings.dt,
-      steps: settings.steps,
+    const requestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = requestId;
+
+    const message: SimulationWorkerRequest = {
+      type: 'simulate',
+      requestId,
+      workspaceMode: settings.workspaceMode,
       methodId: settings.methodId,
-    });
-    const nextReference = simulateTrajectory({
-      initialState,
-      params,
       dt: settings.dt,
       steps: settings.steps,
-      methodId: 'rk4',
-    });
-
-    const nextComparison =
-      settings.workspaceMode === 'comparison'
-        ? simulateComparisonTrajectories(
-            initialState,
-            params,
-            settings.dt,
-            settings.steps,
-          )
-        : [];
-
-    const nearbyInitialState = {
-      ...initialState,
-      theta2: initialState.theta2 + degreesToRadians(0.05),
+      initialState,
+      params,
+      nearbyState: {
+        ...initialState,
+        theta2: initialState.theta2 + degreesToRadians(0.05),
+      },
     };
-    const nearbyTrajectory = simulateTrajectory({
-      initialState: nearbyInitialState,
-      params,
-      dt: settings.dt,
-      steps: settings.steps,
-      methodId: settings.methodId,
-    });
-    const nextSensitivity = computeDivergenceSeries(nextPrimary, nearbyTrajectory);
-
-    startTransition(() => {
-      setPrimaryTrajectory(nextPrimary);
-      setReferenceTrajectory(nextReference);
-      setComparisonTrajectories(nextComparison);
-      setSensitivitySeries(nextSensitivity);
-      setFrameIndex(0);
-      setIsPending(false);
-    });
+    workerRef.current.postMessage(message);
   }, [
     generation,
     settings.workspaceMode,

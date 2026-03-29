@@ -308,8 +308,9 @@ export function ControlsPanel({
       <Section title="Presets">
         <p className="field-note">
           Presets - это готовые наборы параметров для быстрого старта. Они могут
-          на секунду подвисать, потому что приложение заново просчитывает всю
-          траекторию, reference RK4, близкий seed и comparison-набор прямо в браузере.
+          на секунду дольше считаться, потому что приложение заново просчитывает
+          всю траекторию, reference RK4, близкий seed и comparison-набор. Но
+          теперь это уезжает в background worker, так что UI не должен заметно фризить.
         </p>
         <div className="preset-grid">
           {presets.map((preset) => (
