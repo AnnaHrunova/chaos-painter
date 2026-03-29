@@ -130,7 +130,10 @@ button {
 
 .workspace-header p,
 .panel-section-hero p,
+.hero-note,
 .field-note,
+.field-description,
+.phenomenon-note p,
 .preset-card span,
 .summary-lines p {
   margin: 0;
@@ -165,6 +168,11 @@ button {
   background:
     linear-gradient(135deg, rgba(92, 242, 255, 0.08), rgba(255, 122, 69, 0.05)),
     rgba(11, 20, 31, 0.9);
+}
+
+.hero-note {
+  margin-top: 10px;
+  font-size: 0.92rem;
 }
 
 .section-title {
@@ -271,6 +279,11 @@ button {
   padding: 10px 12px;
 }
 
+.select-field select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .range-field-head {
   display: flex;
   justify-content: space-between;
@@ -282,6 +295,12 @@ button {
   width: 92px;
   text-align: right;
   font-family: 'IBM Plex Mono', monospace;
+}
+
+.field-description {
+  display: block;
+  font-size: 0.82rem;
+  color: #7f9bb0;
 }
 
 input[type='range'] {
@@ -313,6 +332,13 @@ input[type='range'] {
     rgba(0, 0, 0, 0.24);
   border-radius: 28px;
   padding: 16px;
+}
+
+.phenomenon-note {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(92, 242, 255, 0.05), rgba(255, 122, 69, 0.03));
 }
 
 .viewport-card,
@@ -466,4 +492,3 @@ input[type='range'] {
     height: 52vh;
   }
 }
-

@@ -242,6 +242,17 @@ export default function App() {
             </div>
           </header>
 
+          <section className="phenomenon-note">
+            <div className="panel-kicker">What You Are Seeing</div>
+            <p>
+              The double pendulum is a classic chaotic system: its motion is fully
+              deterministic, but tiny differences in initial conditions or
+              numerical approximation grow rapidly over time. That makes it a good
+              microscope for both real sensitivity and fake artifacts introduced by
+              coarse integration.
+            </p>
+          </section>
+
           <div className="capture-shell" ref={captureRef}>
             {settings.workspaceMode === 'comparison' ? (
               <ComparisonView
@@ -279,4 +290,3 @@ function StatChip({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

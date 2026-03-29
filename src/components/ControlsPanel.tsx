@@ -47,6 +47,11 @@ export function ControlsPanel({
           Same system, same initial conditions, different solvers. Then chaos
           does its delightful dirty work.
         </p>
+        <p className="hero-note">
+          A double pendulum is a simple deterministic system with extreme
+          sensitivity to small changes. Tiny differences in state or numerical
+          method grow into visibly different motion.
+        </p>
         <div className="playback-row">
           <button className="primary-button" onClick={onTogglePlay} type="button">
             {isPlaying ? 'Pause' : 'Play'}
@@ -76,11 +81,16 @@ export function ControlsPanel({
           onChange={(value) => onChange({ workspaceMode: value as StudioSettings['workspaceMode'] })}
           options={workspaceModeOptions}
         />
+        <p className="field-note">
+          Studio focuses on one solver at a time. Compare runs Euler, RK2, and
+          RK4 from the exact same setup so numerical error is easy to spot.
+        </p>
         {settings.workspaceMode === 'studio' ? (
           <SelectField
             label="Viewport"
             value={settings.visualMode}
             options={visualModeOptions}
+            description="Choose whether to watch the rods directly, inspect the planar trail, or extrude the path into 3D."
             onChange={(value) => onChange({ visualMode: value as StudioSettings['visualMode'] })}
           />
         ) : (
@@ -100,6 +110,7 @@ export function ControlsPanel({
             label: `${integrator.shortLabel} · order ${integrator.order}`,
           }))}
           disabled={settings.workspaceMode === 'comparison'}
+          description="The same equations are integrated with different approximations. Lower-order methods are cheaper and usually drift harder."
           onChange={(value) => onChange({ methodId: value as StudioSettings['methodId'] })}
         />
         <p className="field-note">
@@ -117,6 +128,7 @@ export function ControlsPanel({
           step={0.001}
           value={settings.dt}
           digits={3}
+          description="Time step per integration update. Smaller dt usually improves stability and fidelity but needs more work."
           onChange={(value) => onChange({ dt: value })}
         />
         <RangeField
@@ -126,6 +138,7 @@ export function ControlsPanel({
           step={100}
           value={settings.steps}
           digits={0}
+          description="How long the trajectory is precomputed. Higher values show longer-term divergence and richer trail structures."
           onChange={(value) => onChange({ steps: Math.round(value) })}
         />
         <RangeField
@@ -135,6 +148,7 @@ export function ControlsPanel({
           step={20}
           value={settings.trailWindow}
           digits={0}
+          description="How much of the recent path stays visible. Large values emphasize pattern formation, small values emphasize local motion."
           onChange={(value) => onChange({ trailWindow: Math.round(value) })}
         />
         <RangeField
@@ -144,6 +158,7 @@ export function ControlsPanel({
           step={1}
           value={settings.playbackStride}
           digits={0}
+          description="How many precomputed samples are advanced per animation frame. Higher stride makes playback jump faster through time."
           onChange={(value) => onChange({ playbackStride: Math.round(value) })}
         />
       </Section>
@@ -156,6 +171,7 @@ export function ControlsPanel({
           step={1}
           value={settings.theta1Deg}
           digits={0}
+          description="Initial angle of the first arm relative to vertical. This sets the starting geometry and initial potential energy."
           onChange={(value) => onChange({ theta1Deg: value })}
         />
         <RangeField
@@ -165,6 +181,7 @@ export function ControlsPanel({
           step={1}
           value={settings.theta2Deg}
           digits={0}
+          description="Initial angle of the second arm. Small changes here can explode into very different trajectories because the system is chaotic."
           onChange={(value) => onChange({ theta2Deg: value })}
         />
         <RangeField
@@ -174,6 +191,7 @@ export function ControlsPanel({
           step={0.01}
           value={settings.omega1}
           digits={2}
+          description="Initial angular velocity of the first arm. Positive and negative values kick the system in opposite rotational directions."
           onChange={(value) => onChange({ omega1: value })}
         />
         <RangeField
@@ -183,6 +201,7 @@ export function ControlsPanel({
           step={0.01}
           value={settings.omega2}
           digits={2}
+          description="Initial angular velocity of the second arm. It changes how quickly the coupled motion becomes tangled."
           onChange={(value) => onChange({ omega2: value })}
         />
       </Section>
@@ -195,6 +214,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.m1}
           digits={2}
+          description="Mass of the first bob. Heavier values change the coupling and shift how energy moves through the system."
           onChange={(value) => onChange({ m1: value })}
         />
         <RangeField
@@ -204,6 +224,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.m2}
           digits={2}
+          description="Mass of the second bob. This strongly affects the lower arm's inertia and the shape of the resulting trail."
           onChange={(value) => onChange({ m2: value })}
         />
         <RangeField
@@ -213,6 +234,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.l1}
           digits={2}
+          description="Length of the first rod. Longer arms increase reach and alter the pendulum's natural time scale."
           onChange={(value) => onChange({ l1: value })}
         />
         <RangeField
@@ -222,6 +244,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.l2}
           digits={2}
+          description="Length of the second rod. It changes the reachable geometry and the curvature density in the trail."
           onChange={(value) => onChange({ l2: value })}
         />
         <RangeField
@@ -231,6 +254,7 @@ export function ControlsPanel({
           step={0.05}
           value={settings.g}
           digits={2}
+          description="Gravitational acceleration. Higher values pull the motion through its swings faster and intensify acceleration."
           onChange={(value) => onChange({ g: value })}
         />
       </Section>
@@ -240,6 +264,7 @@ export function ControlsPanel({
           label="Color"
           value={settings.colorMode}
           options={colorModeOptions}
+          description="Map trail color to time, speed, energy drift, or angular velocity to reveal different structures in the same path."
           onChange={(value) => onChange({ colorMode: value as StudioSettings['colorMode'] })}
         />
         {settings.visualMode === 'trail3d' ? (
@@ -247,6 +272,7 @@ export function ControlsPanel({
             label="3D depth"
             value={settings.zAxisMode}
             options={zAxisModeOptions}
+            description="Choose what the 3D extrusion means: elapsed time, instantaneous speed, or numerical energy drift."
             onChange={(value) => onChange({ zAxisMode: value as StudioSettings['zAxisMode'] })}
           />
         ) : null}
@@ -257,6 +283,7 @@ export function ControlsPanel({
           step={0.1}
           value={settings.lineWidth}
           digits={1}
+          description="Visual thickness of the rendered trajectory. Useful for balancing clarity versus glow in chaos-art mode."
           onChange={(value) => onChange({ lineWidth: value })}
         />
       </Section>
@@ -299,12 +326,14 @@ function SelectField({
   label,
   value,
   options,
+  description,
   disabled = false,
   onChange,
 }: {
   label: string;
   value: string;
   options: readonly { value: string; label: string }[];
+  description?: string;
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
@@ -322,6 +351,7 @@ function SelectField({
           </option>
         ))}
       </select>
+      {description ? <small className="field-description">{description}</small> : null}
     </label>
   );
 }
@@ -333,6 +363,7 @@ function RangeField({
   step,
   value,
   digits,
+  description,
   onChange,
 }: {
   label: string;
@@ -341,6 +372,7 @@ function RangeField({
   step: number;
   value: number;
   digits: number;
+  description?: string;
   onChange: (value: number) => void;
 }) {
   return (
@@ -365,6 +397,7 @@ function RangeField({
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
       />
+      {description ? <small className="field-description">{description}</small> : null}
     </label>
   );
 }
