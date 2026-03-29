@@ -42,11 +42,11 @@ export function ControlsPanel({
   return (
     <aside className="controls-panel">
       <section className="panel-section panel-section-hero">
-        <div className="panel-kicker">Numerical Chaos Studio</div>
+        <div className="panel-kicker">Лаборатория численного хаоса</div>
         <h1>Chaos Painter</h1>
         <p>
-          Same system, same initial conditions, different solvers. Then chaos
-          does its delightful dirty work.
+          Одна и та же система, одни и те же начальные условия, но разные
+          численные методы. Дальше хаос уже сам делает свою грязную работу.
         </p>
         <p className="hero-note">
           Двойной маятник - простая детерминированная система с экстремальной
@@ -55,41 +55,41 @@ export function ControlsPanel({
         </p>
         <div className="playback-row">
           <button className="primary-button" onClick={onTogglePlay} type="button">
-            {isPlaying ? 'Pause' : 'Play'}
+            {isPlaying ? 'Пауза' : 'Старт'}
           </button>
           <button className="ghost-button" onClick={onReset} type="button">
-            Reset
+            Сброс
           </button>
           <button className="ghost-button" onClick={onRegenerate} type="button">
-            Regenerate
+            Пересчитать
           </button>
           <button className="ghost-button" onClick={onExport} type="button">
-            Export PNG
+            Экспорт PNG
           </button>
         </div>
         <div className="status-row">
           <span className={`status-pill ${isPending ? 'status-pill-live' : ''}`}>
-            {isPending ? 'Recomputing' : 'Ready'}
+            {isPending ? 'Пересчёт' : 'Готово'}
           </span>
-          <span className="status-pill">Browser only</span>
-          <span className="status-pill">Static deploy</span>
+          <span className="status-pill">Только браузер</span>
+          <span className="status-pill">Статический деплой</span>
         </div>
       </section>
 
-      <Section title="Workspace">
+      <Section title="Режим работы">
         <Segmented
           value={settings.workspaceMode}
           onChange={(value) => onChange({ workspaceMode: value as StudioSettings['workspaceMode'] })}
           options={workspaceModeOptions}
         />
         <p className="field-note">
-          Studio показывает один метод за раз. Compare запускает Euler, RK2 и
+          Студия показывает один метод за раз. Сравнение запускает Euler, RK2 и
           RK4 на абсолютно одинаковых начальных условиях, чтобы численная
           ошибка была видна сразу.
         </p>
         {settings.workspaceMode === 'studio' ? (
           <SelectField
-            label="Viewport"
+            label="Вид"
             value={settings.visualMode}
             options={visualModeOptions}
             description="Выбирает способ просмотра: сами стержни, плоский след траектории или 3D-экструзию пути."
@@ -97,15 +97,15 @@ export function ControlsPanel({
           />
         ) : (
           <p className="field-note">
-            Compare показывает Euler, Midpoint, Heun, RK3 и RK4 бок о бок на
+            Сравнение показывает Euler, Midpoint, Heun, RK3 и RK4 бок о бок на
             одних и тех же начальных условиях.
           </p>
         )}
       </Section>
 
-      <Section title="Integrator">
+      <Section title="Интегратор">
         <SelectField
-          label="Method"
+          label="Метод"
           value={settings.methodId}
           options={integrators.map((integrator) => ({
             value: integrator.id,
@@ -117,12 +117,12 @@ export function ControlsPanel({
         />
         <p className="field-note">
           {settings.workspaceMode === 'comparison'
-            ? 'В режиме Comparison всегда одновременно считаются Euler, RK2 и RK4 на одном и том же наборе параметров.'
+            ? 'В режиме сравнения одновременно считаются Euler, Midpoint, Heun, RK3 и RK4 на одном и том же наборе параметров.'
             : currentIntegrator?.description}
         </p>
       </Section>
 
-      <Section title="Numerics">
+      <Section title="Численные параметры">
         <RangeField
           label="dt"
           min={0.002}
@@ -134,7 +134,7 @@ export function ControlsPanel({
           onChange={(value) => onChange({ dt: value })}
         />
         <RangeField
-          label="Simulation steps"
+          label="Шаги симуляции"
           min={500}
           max={9000}
           step={100}
@@ -144,7 +144,7 @@ export function ControlsPanel({
           onChange={(value) => onChange({ steps: Math.round(value) })}
         />
         <RangeField
-          label="Visible trail"
+          label="Видимый хвост"
           min={80}
           max={3200}
           step={20}
@@ -154,13 +154,13 @@ export function ControlsPanel({
           onChange={(value) => onChange({ trailWindow: Math.round(value) })}
         />
         <ToggleField
-          label="Keep full path"
+          label="Хранить весь путь"
           checked={settings.keepFullPath}
           description="Если включено, уже пройденный путь не исчезает, и траектория накапливается целиком от начала симуляции."
           onChange={(checked) => onChange({ keepFullPath: checked })}
         />
         <RangeField
-          label="Playback stride"
+          label="Шаг проигрывания"
           min={1}
           max={24}
           step={1}
@@ -171,7 +171,7 @@ export function ControlsPanel({
         />
       </Section>
 
-      <Section title="Initial State">
+      <Section title="Начальное состояние">
         <RangeField
           label="theta1 (deg)"
           min={-179}
@@ -214,7 +214,7 @@ export function ControlsPanel({
         />
       </Section>
 
-      <Section title="Physical Parameters">
+      <Section title="Физические параметры">
         <RangeField
           label="mass 1"
           min={0.2}
@@ -267,10 +267,10 @@ export function ControlsPanel({
         />
       </Section>
 
-      <Section title="Visual Mapping">
+      <Section title="Визуализация">
         {settings.visualMode !== 'trail3d' ? (
           <SelectField
-            label="Render mode"
+            label="Режим отрисовки"
             value={settings.renderMode}
             options={renderModeOptions}
             description="Меняет только способ визуализации уже рассчитанной траектории. Физика, интегратор и данные при этом не подменяются."
@@ -278,7 +278,7 @@ export function ControlsPanel({
           />
         ) : null}
         <SelectField
-          label="Color"
+          label="Цвет"
           value={settings.colorMode}
           options={colorModeOptions}
           description="Привязывает цвет следа ко времени, скорости, дрейфу энергии или угловой скорости, чтобы по-разному раскрывать структуру одной и той же траектории."
@@ -286,7 +286,7 @@ export function ControlsPanel({
         />
         {settings.visualMode === 'trail3d' ? (
           <SelectField
-            label="3D depth"
+            label="Глубина 3D"
             value={settings.zAxisMode}
             options={zAxisModeOptions}
             description="Определяет смысл глубины в 3D: прошедшее время, мгновенная скорость или численный дрейф энергии."
@@ -294,7 +294,7 @@ export function ControlsPanel({
           />
         ) : null}
         <RangeField
-          label="Line width"
+          label="Толщина линии"
           min={1}
           max={5}
           step={0.1}
@@ -305,12 +305,13 @@ export function ControlsPanel({
         />
       </Section>
 
-      <Section title="Presets">
+      <Section title="Пресеты">
         <p className="field-note">
-          Presets - это готовые наборы параметров для быстрого старта. Они могут
+          Пресеты - это готовые наборы параметров для быстрого старта. Они могут
           на секунду дольше считаться, потому что приложение заново просчитывает
-          всю траекторию, reference RK4, близкий seed и comparison-набор. Но
-          теперь это уезжает в background worker, так что UI не должен заметно фризить.
+          всю траекторию, референсный RK4, близкий стартовый seed и набор для
+          сравнения. Но теперь это уезжает в фоновый worker, так что
+          интерфейс не должен заметно фризить.
         </p>
         <div className="preset-grid">
           {presets.map((preset) => (

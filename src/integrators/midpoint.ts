@@ -7,7 +7,8 @@ export const midpointIntegrator: IntegratorDefinition = {
   label: 'RK2 / Midpoint',
   shortLabel: 'RK2',
   order: 2,
-  description: 'A cleaner second-order estimate that lands between speed and fidelity.',
+  description:
+    'Более аккуратный метод второго порядка. Часто даёт разумный компромисс между скоростью расчёта и точностью.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const midpointState = addScaledState(state, k1, dt * 0.5);
@@ -15,4 +16,3 @@ export const midpointIntegrator: IntegratorDefinition = {
     return addScaledState(state, k2, dt);
   },
 };
-

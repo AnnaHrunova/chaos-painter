@@ -8,7 +8,7 @@ export const heunIntegrator: IntegratorDefinition = {
   shortLabel: 'Heun',
   order: 2,
   description:
-    'Second-order predictor-corrector. Usually less sloppy than plain Euler, while still staying easy to reason about.',
+    'Предиктор-корректор второго порядка. Обычно заметно аккуратнее обычного Euler, но всё ещё простой и наглядный.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const predictor = addScaledState(state, k1, dt);
@@ -22,4 +22,3 @@ export const heunIntegrator: IntegratorDefinition = {
     };
   },
 };
-

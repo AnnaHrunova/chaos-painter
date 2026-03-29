@@ -11,7 +11,8 @@ export const presets: StudioPreset[] = [
   {
     id: 'balanced-split',
     name: 'Balanced Split',
-    description: 'A clean default where RK4 stays elegant and Euler starts to fray.',
+    description:
+      'Сбалансированный сценарий по умолчанию, где RK4 ещё держится чисто, а Euler уже начинает разваливаться.',
     patch: {
       workspaceMode: 'comparison',
       visualMode: 'trail2d',
@@ -30,7 +31,8 @@ export const presets: StudioPreset[] = [
   {
     id: 'energy-leak',
     name: 'Energy Leak',
-    description: 'An intentionally rude setup where coarse Euler injects visible numerical nonsense.',
+    description:
+      'Нарочито жёсткий сценарий, где крупный Euler начинает явно подмешивать численную ерунду в энергетику системы.',
     patch: {
       workspaceMode: 'comparison',
       visualMode: 'trail2d',
@@ -50,7 +52,8 @@ export const presets: StudioPreset[] = [
   {
     id: 'ribbon-bloom',
     name: 'Ribbon Bloom',
-    description: 'Long trails and slow drift tuned for 2D chaos-art output.',
+    description:
+      'Длинные хвосты и медленный дрейф, настроенные под насыщенный 2D chaos-art рендер.',
     patch: {
       workspaceMode: 'studio',
       visualMode: 'chaosArt',
@@ -71,7 +74,8 @@ export const presets: StudioPreset[] = [
   {
     id: 'nebula-tube',
     name: 'Nebula Tube',
-    description: 'A 3D extrusion preset that turns time into depth and the trail into sculpture.',
+    description:
+      '3D-пресет, в котором время превращается в глубину, а траектория становится почти скульптурной.',
     patch: {
       workspaceMode: 'studio',
       visualMode: 'trail3d',

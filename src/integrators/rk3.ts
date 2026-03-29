@@ -8,7 +8,7 @@ export const rk3Integrator: IntegratorDefinition = {
   shortLabel: 'RK3',
   order: 3,
   description:
-    'A third-order Runge-Kutta method that often lands in a useful middle ground between RK2 and RK4.',
+    'Метод Рунге-Кутты третьего порядка. Часто даёт полезную середину между RK2 и RK4 по цене и качеству.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);
@@ -36,4 +36,3 @@ export const rk3Integrator: IntegratorDefinition = {
     };
   },
 };
-

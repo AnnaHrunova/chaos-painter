@@ -235,28 +235,29 @@ export default function App() {
         <section className="workspace-shell">
           <header className="workspace-header">
             <div>
-              <div className="panel-kicker">Interactive Lab</div>
+              <div className="panel-kicker">Интерактивная лаборатория</div>
               <h2>
                 {settings.workspaceMode === 'comparison'
-                  ? 'Integrator comparison'
+                  ? 'Сравнение интеграторов'
                   : settings.visualMode === 'chaosArt'
-                    ? 'Chaos art mode'
-                    : 'Single-system studio'}
+                    ? 'Режим хаос-арта'
+                    : 'Студия одной системы'}
               </h2>
               <p>
-                Same physics, different approximations. Shrink dt and the lies get
-                smaller. Pick Euler and the lies get loud.
+                Одна и та же физика, но разные приближения. Уменьшаешь dt - и
+                численная ложь становится тише. Берёшь Euler - и она орёт уже
+                в полный голос.
               </p>
             </div>
             <div className="hero-stats">
               <StatChip label="dt" value={settings.dt.toFixed(3)} />
-              <StatChip label="steps" value={String(settings.steps)} />
+              <StatChip label="шаги" value={String(settings.steps)} />
               <StatChip
-                label="time"
+                label="время"
                 value={currentSample ? `${currentSample.time.toFixed(2)} s` : '...'}
               />
               <StatChip
-                label="max drift"
+                label="макс. дрейф"
                 value={
                   heroTrajectory
                     ? `${(heroTrajectory.summary.maxEnergyDriftRatio * 100).toFixed(2)}%`
@@ -267,7 +268,7 @@ export default function App() {
           </header>
 
           <section className="phenomenon-note">
-            <div className="panel-kicker">What You Are Seeing</div>
+            <div className="panel-kicker">Что ты видишь</div>
             <p>
               Двойной маятник - классическая хаотическая система: её движение
               полностью детерминировано, но крошечные различия в начальных

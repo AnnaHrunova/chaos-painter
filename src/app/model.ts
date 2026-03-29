@@ -62,37 +62,37 @@ export const defaultSettings: StudioSettings = {
 };
 
 export const workspaceModeOptions = [
-  { value: 'studio', label: 'Studio' },
-  { value: 'comparison', label: 'Compare' },
+  { value: 'studio', label: 'Студия' },
+  { value: 'comparison', label: 'Сравнение' },
 ] as const;
 
 export const visualModeOptions = [
-  { value: 'pendulum2d', label: '2D Pendulum' },
-  { value: 'trail2d', label: '2D Trail' },
-  { value: 'trail3d', label: '3D Trail' },
-  { value: 'chaosArt', label: 'Chaos Art' },
+  { value: 'pendulum2d', label: 'Маятник 2D' },
+  { value: 'trail2d', label: 'След 2D' },
+  { value: 'trail3d', label: 'След 3D' },
+  { value: 'chaosArt', label: 'Хаос-арт' },
 ] as const;
 
 export const colorModeOptions = [
-  { value: 'time', label: 'Color by time' },
-  { value: 'speed', label: 'Color by speed' },
-  { value: 'energyDrift', label: 'Color by energy drift' },
-  { value: 'angularVelocity', label: 'Color by angular velocity' },
+  { value: 'time', label: 'Цвет по времени' },
+  { value: 'speed', label: 'Цвет по скорости' },
+  { value: 'energyDrift', label: 'Цвет по дрейфу энергии' },
+  { value: 'angularVelocity', label: 'Цвет по угловой скорости' },
 ] as const;
 
 export const renderModeOptions = [
-  { value: 'scientific', label: 'Scientific trail' },
-  { value: 'density', label: 'Density map' },
-  { value: 'phasePortrait', label: 'Phase portrait' },
-  { value: 'methodDelta', label: 'Method delta view' },
-  { value: 'energyDrift', label: 'Energy drift view' },
-  { value: 'neon', label: 'Neon long-exposure' },
+  { value: 'scientific', label: 'Научный след' },
+  { value: 'density', label: 'Карта плотности' },
+  { value: 'phasePortrait', label: 'Фазовый портрет' },
+  { value: 'methodDelta', label: 'Расхождение метода' },
+  { value: 'energyDrift', label: 'Дрейф энергии' },
+  { value: 'neon', label: 'Неон / длинная экспозиция' },
 ] as const;
 
 export const zAxisModeOptions = [
-  { value: 'time', label: 'Z = time' },
-  { value: 'speed', label: 'Z = speed' },
-  { value: 'energyDrift', label: 'Z = energy drift' },
+  { value: 'time', label: 'Z = время' },
+  { value: 'speed', label: 'Z = скорость' },
+  { value: 'energyDrift', label: 'Z = дрейф энергии' },
 ] as const;
 
 export function toInitialState(settings: StudioSettings): PendulumState {

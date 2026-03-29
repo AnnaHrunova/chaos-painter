@@ -98,7 +98,7 @@ export function drawCanvasScene({
       height,
       lineWidth,
       '#ff8b5a',
-      'distance from RK4',
+      'расстояние до RK4',
     );
   } else if (renderMode === 'energyDrift') {
     drawMetricPlot(
@@ -111,7 +111,7 @@ export function drawCanvasScene({
       height,
       lineWidth,
       '#a6ff9e',
-      'energy drift ratio',
+      'относительный дрейф энергии',
     );
   }
 
@@ -304,7 +304,7 @@ function drawMetricPlot(
   const plotHeight = height - padding * 2;
 
   drawPlotFrame(ctx, width, height, padding);
-  drawAxisLabels(ctx, width, height, padding, 'time', axisLabel);
+  drawAxisLabels(ctx, width, height, padding, 'время', axisLabel);
 
   if (points.length === 0) {
     return;
@@ -589,35 +589,35 @@ function normalize(value: number, min: number, max: number): number {
 
 function overlaySubtitle(renderMode: RenderMode, sample: TrajectorySample): string {
   if (renderMode === 'phasePortrait') {
-    return 'theta2 vs omega2';
+    return 'theta2 против omega2';
   }
 
   if (renderMode === 'methodDelta') {
-    return 'distance from RK4 over time';
+    return 'расстояние до RK4 во времени';
   }
 
   if (renderMode === 'energyDrift') {
-    return 'energy drift over time';
+    return 'дрейф энергии во времени';
   }
 
   if (renderMode === 'density') {
-    return 'time spent in each region';
+    return 'время, проведённое в каждой области';
   }
 
   if (renderMode === 'neon') {
-    return `t = ${sample.time.toFixed(2)} s · long-exposure`;
+    return `t = ${sample.time.toFixed(2)} s · длинная экспозиция`;
   }
 
   return `t = ${sample.time.toFixed(2)} s`;
 }
 
 function renderModeLabel(renderMode: RenderMode): string {
-  if (renderMode === 'scientific') return 'Scientific trail';
-  if (renderMode === 'density') return 'Density map';
-  if (renderMode === 'phasePortrait') return 'Phase portrait';
-  if (renderMode === 'methodDelta') return 'Method delta';
-  if (renderMode === 'energyDrift') return 'Energy drift';
-  return 'Neon';
+  if (renderMode === 'scientific') return 'Научный след';
+  if (renderMode === 'density') return 'Карта плотности';
+  if (renderMode === 'phasePortrait') return 'Фазовый портрет';
+  if (renderMode === 'methodDelta') return 'Расхождение метода';
+  if (renderMode === 'energyDrift') return 'Дрейф энергии';
+  return 'Неон';
 }
 
 function hsl(hue: number, saturation: number, lightness: number): string {

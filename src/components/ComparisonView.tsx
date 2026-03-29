@@ -18,7 +18,7 @@ export function ComparisonView({
   if (trajectories.length === 0) {
     return (
       <div className="empty-state">
-        <p>Running all integrators for side-by-side comparison...</p>
+        <p>Считаю все интеграторы для бокового сравнения...</p>
       </div>
     );
   }
@@ -47,12 +47,12 @@ export function ComparisonView({
               referenceTrajectory={rk4Reference}
               showPendulum
               label={trajectory.methodLabel}
-              subtitle={`dt = ${trajectory.dt.toFixed(3)}, order ${integrator.order}`}
+              subtitle={`dt = ${trajectory.dt.toFixed(3)}, порядок ${integrator.order}`}
             />
             <div className="comparison-meta">
               <span>{trajectory.samples[frameIndex]?.time.toFixed(2)} s</span>
               <span>
-                max drift {formatPercent(trajectory.summary.maxEnergyDriftRatio)}
+                макс. дрейф {formatPercent(trajectory.summary.maxEnergyDriftRatio)}
               </span>
             </div>
             <p className="comparison-description">{integrator.description}</p>

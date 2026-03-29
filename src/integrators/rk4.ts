@@ -7,7 +7,8 @@ export const rk4Integrator: IntegratorDefinition = {
   label: 'RK4',
   shortLabel: 'RK4',
   order: 4,
-  description: 'The most stable method in this app at the same dt, without pretending chaos goes away.',
+  description:
+    'Самый устойчивый из текущих методов при одинаковом dt. Хаос он не отменяет, но обычно меньше вносит численной лжи.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);
@@ -16,4 +17,3 @@ export const rk4Integrator: IntegratorDefinition = {
     return addScaledState(state, combineStates(k1, k2, k3, k4), dt / 6);
   },
 };
-
