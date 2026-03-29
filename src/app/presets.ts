@@ -43,6 +43,7 @@ export const presets: StudioPreset[] = [
       omega1: -0.08,
       omega2: 0.02,
       colorMode: 'energyDrift',
+      renderMode: 'methodDelta',
       lineWidth: 2.5,
     },
   },
@@ -62,6 +63,7 @@ export const presets: StudioPreset[] = [
       omega1: 0.02,
       omega2: 0.01,
       colorMode: 'speed',
+      renderMode: 'neon',
       lineWidth: 2.8,
       playbackStride: 8,
     },
@@ -87,4 +89,3 @@ export const presets: StudioPreset[] = [
     },
   },
 ];
-

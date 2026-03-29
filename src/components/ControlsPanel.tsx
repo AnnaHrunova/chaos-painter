@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { integrators } from '../integrators';
 import {
   colorModeOptions,
+  renderModeOptions,
   visualModeOptions,
   workspaceModeOptions,
   zAxisModeOptions,
@@ -261,6 +262,15 @@ export function ControlsPanel({
       </Section>
 
       <Section title="Visual Mapping">
+        {settings.visualMode !== 'trail3d' ? (
+          <SelectField
+            label="Render mode"
+            value={settings.renderMode}
+            options={renderModeOptions}
+            description="Меняет только способ визуализации уже рассчитанной траектории. Физика, интегратор и данные при этом не подменяются."
+            onChange={(value) => onChange({ renderMode: value as StudioSettings['renderMode'] })}
+          />
+        ) : null}
         <SelectField
           label="Color"
           value={settings.colorMode}

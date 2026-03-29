@@ -5,12 +5,14 @@ import { ThreeTrailView } from './ThreeTrailView';
 
 interface StudioViewportProps {
   trajectory: TrajectorySeries | null;
+  referenceTrajectory: TrajectorySeries | null;
   frameIndex: number;
   settings: StudioSettings;
 }
 
 export function StudioViewport({
   trajectory,
+  referenceTrajectory,
   frameIndex,
   settings,
 }: StudioViewportProps) {
@@ -45,9 +47,10 @@ export function StudioViewport({
         lineWidth={settings.lineWidth}
         colorMode={settings.colorMode}
         visualMode={settings.visualMode}
+        renderMode={settings.renderMode}
+        referenceTrajectory={referenceTrajectory}
         showPendulum={settings.visualMode === 'pendulum2d'}
       />
     </div>
   );
 }
-

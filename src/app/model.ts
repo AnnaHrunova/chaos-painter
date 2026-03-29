@@ -5,6 +5,13 @@ export type WorkspaceMode = 'studio' | 'comparison';
 export type VisualMode = 'pendulum2d' | 'trail2d' | 'trail3d' | 'chaosArt';
 export type ColorMode = 'time' | 'speed' | 'energyDrift' | 'angularVelocity';
 export type ZAxisMode = 'time' | 'speed' | 'energyDrift';
+export type RenderMode =
+  | 'scientific'
+  | 'density'
+  | 'phasePortrait'
+  | 'methodDelta'
+  | 'energyDrift'
+  | 'neon';
 
 export interface StudioSettings {
   workspaceMode: WorkspaceMode;
@@ -26,6 +33,7 @@ export interface StudioSettings {
   lineWidth: number;
   colorMode: ColorMode;
   zAxisMode: ZAxisMode;
+  renderMode: RenderMode;
 }
 
 export const defaultSettings: StudioSettings = {
@@ -48,6 +56,7 @@ export const defaultSettings: StudioSettings = {
   lineWidth: 2.2,
   colorMode: 'time',
   zAxisMode: 'time',
+  renderMode: 'scientific',
 };
 
 export const workspaceModeOptions = [
@@ -67,6 +76,15 @@ export const colorModeOptions = [
   { value: 'speed', label: 'Color by speed' },
   { value: 'energyDrift', label: 'Color by energy drift' },
   { value: 'angularVelocity', label: 'Color by angular velocity' },
+] as const;
+
+export const renderModeOptions = [
+  { value: 'scientific', label: 'Scientific trail' },
+  { value: 'density', label: 'Density map' },
+  { value: 'phasePortrait', label: 'Phase portrait' },
+  { value: 'methodDelta', label: 'Method delta view' },
+  { value: 'energyDrift', label: 'Energy drift view' },
+  { value: 'neon', label: 'Neon long-exposure' },
 ] as const;
 
 export const zAxisModeOptions = [
@@ -101,4 +119,3 @@ export function degreesToRadians(value: number): number {
 export function radiansToDegrees(value: number): number {
   return (value * 180) / Math.PI;
 }
-

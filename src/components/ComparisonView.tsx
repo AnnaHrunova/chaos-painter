@@ -22,6 +22,11 @@ export function ComparisonView({
     );
   }
 
+  const rk4Reference =
+    trajectories.find((trajectory) => trajectory.methodId === 'rk4') ??
+    trajectories[trajectories.length - 1] ??
+    null;
+
   return (
     <div className="comparison-grid">
       {trajectories.map((trajectory) => (
@@ -33,6 +38,8 @@ export function ComparisonView({
             lineWidth={settings.lineWidth}
             colorMode={settings.colorMode}
             visualMode="trail2d"
+            renderMode={settings.renderMode}
+            referenceTrajectory={rk4Reference}
             showPendulum
             label={trajectory.methodLabel}
             subtitle={`dt = ${trajectory.dt.toFixed(3)}, order ${trajectory.methodId === 'euler' ? 1 : trajectory.methodId === 'midpoint' ? 2 : 4}`}

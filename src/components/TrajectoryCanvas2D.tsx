@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { ColorMode, VisualMode } from '../app/model';
+import type { ColorMode, RenderMode, VisualMode } from '../app/model';
 import { drawCanvasScene } from '../render/canvas2d';
 import type { TrajectorySeries } from '../physics/types';
 
@@ -10,6 +10,8 @@ interface TrajectoryCanvas2DProps {
   lineWidth: number;
   colorMode: ColorMode;
   visualMode: VisualMode;
+  renderMode: RenderMode;
+  referenceTrajectory?: TrajectorySeries | null;
   label?: string;
   subtitle?: string;
   showPendulum?: boolean;
@@ -22,6 +24,8 @@ export function TrajectoryCanvas2D({
   lineWidth,
   colorMode,
   visualMode,
+  renderMode,
+  referenceTrajectory,
   label,
   subtitle,
   showPendulum,
@@ -41,6 +45,8 @@ export function TrajectoryCanvas2D({
       lineWidth,
       colorMode,
       visualMode,
+      renderMode,
+      referenceTrajectory,
       label,
       subtitle,
       showPendulum,
@@ -52,6 +58,8 @@ export function TrajectoryCanvas2D({
     lineWidth,
     colorMode,
     visualMode,
+    renderMode,
+    referenceTrajectory,
     label,
     subtitle,
     showPendulum,
@@ -59,4 +67,3 @@ export function TrajectoryCanvas2D({
 
   return <canvas className="trajectory-canvas" ref={canvasRef} />;
 }
-

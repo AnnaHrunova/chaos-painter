@@ -13,6 +13,7 @@ import type { MetricPoint, TrajectorySeries } from './physics/types';
 export default function App() {
   const [settings, setSettings] = useState(defaultSettings);
   const [primaryTrajectory, setPrimaryTrajectory] = useState<TrajectorySeries | null>(null);
+  const [referenceTrajectory, setReferenceTrajectory] = useState<TrajectorySeries | null>(null);
   const [comparisonTrajectories, setComparisonTrajectories] = useState<TrajectorySeries[]>([]);
   const [sensitivitySeries, setSensitivitySeries] = useState<MetricPoint[]>([]);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -32,6 +33,13 @@ export default function App() {
       dt: settings.dt,
       steps: settings.steps,
       methodId: settings.methodId,
+    });
+    const nextReference = simulateTrajectory({
+      initialState,
+      params,
+      dt: settings.dt,
+      steps: settings.steps,
+      methodId: 'rk4',
     });
 
     const nextComparison =
@@ -59,6 +67,7 @@ export default function App() {
 
     startTransition(() => {
       setPrimaryTrajectory(nextPrimary);
+      setReferenceTrajectory(nextReference);
       setComparisonTrajectories(nextComparison);
       setSensitivitySeries(nextSensitivity);
       setFrameIndex(0);
@@ -264,6 +273,7 @@ export default function App() {
             ) : (
               <StudioViewport
                 trajectory={primaryTrajectory}
+                referenceTrajectory={referenceTrajectory}
                 frameIndex={frameIndex}
                 settings={settings}
               />
