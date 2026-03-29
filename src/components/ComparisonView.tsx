@@ -47,7 +47,7 @@ export function ComparisonView({
               referenceTrajectory={rk4Reference}
               showPendulum
               label={trajectory.methodLabel}
-              subtitle={`dt = ${trajectory.dt.toFixed(3)}, порядок ${integrator.order}`}
+              subtitle={`dt = ${trajectory.dt.toFixed(3)}, p${integrator.order}, точность ${integrator.accuracyRank}/5`}
             />
             <div className="comparison-meta">
               <span>{trajectory.samples[frameIndex]?.time.toFixed(2)} s</span>

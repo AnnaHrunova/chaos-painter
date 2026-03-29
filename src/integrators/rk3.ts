@@ -7,8 +7,10 @@ export const rk3Integrator: IntegratorDefinition = {
   label: 'RK3',
   shortLabel: 'RK3',
   order: 3,
+  accuracyRank: 4,
+  accentColor: '#d7a8ff',
   description:
-    'Метод Рунге-Кутты третьего порядка. Часто даёт полезную середину между RK2 и RK4 по цене и качеству.',
+    'Использует три оценки наклона внутри одного шага и поэтому лучше отслеживает быстро меняющуюся геометрию траектории. Обычно уже сильно чище семейства RK2, но ещё дешевле классического RK4.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);

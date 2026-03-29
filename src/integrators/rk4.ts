@@ -7,8 +7,10 @@ export const rk4Integrator: IntegratorDefinition = {
   label: 'RK4',
   shortLabel: 'RK4',
   order: 4,
+  accuracyRank: 5,
+  accentColor: '#a6ff9e',
   description:
-    'Самый устойчивый из текущих методов при одинаковом dt. Хаос он не отменяет, но обычно меньше вносит численной лжи.',
+    'Классический четырёхстадийный RK4: смотрит на наклон в начале, двух внутренних точках и в конце шага. Это основной референс fixed-step режима: обычно лучше всех держит форму траектории и энергию при том же dt.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);

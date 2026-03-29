@@ -7,7 +7,9 @@ export const eulerIntegrator: IntegratorDefinition = {
   label: 'Euler',
   shortLabel: 'Euler',
   order: 1,
+  accuracyRank: 1,
+  accentColor: '#ff8b5a',
   description:
-    'Быстрый и грубый метод первого порядка. Хорошо показывает численный дрейф, нестабильность и артефакты при крупном dt.',
+    'Берёт производную только в начале шага и слепо тянет состояние вперёд по этой касательной. Самый дешёвый и самый неточный: быстро накапливает дрейф энергии и заметно врёт на крупном dt.',
   step: (state, params, dt) => addScaledState(state, derivatives(state, params), dt),
 };

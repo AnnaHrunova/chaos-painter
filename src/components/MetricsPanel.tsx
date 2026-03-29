@@ -1,4 +1,5 @@
 import { computeDivergenceSeries } from '../simulation/comparison';
+import { getIntegrator } from '../integrators';
 import { formatFixed, formatPercent, formatSigned } from '../lib/format';
 import type { WorkspaceMode } from '../app/model';
 import type { MetricPoint, TrajectorySeries } from '../physics/types';
@@ -32,10 +33,10 @@ export function MetricsPanel({
     const energySeries = comparisonTrajectories.map(toEnergySeries);
     const divergenceSeries = comparisonTrajectories
       .filter((trajectory) => trajectory.methodId !== reference.methodId)
-      .map((trajectory, index) => ({
+      .map((trajectory) => ({
         id: trajectory.methodId,
         label: `${trajectory.methodLabel} vs ${reference.methodLabel}`,
-        color: ['#ff8b5a', '#9ec1ff'][index] ?? '#ff8b5a',
+        color: getIntegrator(trajectory.methodId).accentColor,
         points: computeDivergenceSeries(reference, trajectory),
       }));
 
@@ -109,11 +110,13 @@ export function MetricsPanel({
 
 function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
   const palette: Record<TrajectorySeries['methodId'], string> = {
-    euler: '#ff8b5a',
-    midpoint: '#8fe1ff',
-    heun: '#ffd36e',
-    rk3: '#d7a8ff',
-    rk4: '#a6ff9e',
+    euler: getIntegrator('euler').accentColor,
+    midpoint: getIntegrator('midpoint').accentColor,
+    heun: getIntegrator('heun').accentColor,
+    ralston: getIntegrator('ralston').accentColor,
+    rk3: getIntegrator('rk3').accentColor,
+    rk4: getIntegrator('rk4').accentColor,
+    rk4_38: getIntegrator('rk4_38').accentColor,
   };
 
   return {

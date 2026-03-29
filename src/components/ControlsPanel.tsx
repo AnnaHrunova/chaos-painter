@@ -83,9 +83,9 @@ export function ControlsPanel({
           options={workspaceModeOptions}
         />
         <p className="field-note">
-          Студия показывает один метод за раз. Сравнение запускает Euler, RK2 и
-          RK4 на абсолютно одинаковых начальных условиях, чтобы численная
-          ошибка была видна сразу.
+          Студия показывает один метод за раз. Сравнение запускает весь набор
+          методов на абсолютно одинаковых начальных условиях, чтобы численная
+          ошибка была видна сразу и без самообмана.
         </p>
         {settings.workspaceMode === 'studio' ? (
           <SelectField
@@ -97,8 +97,8 @@ export function ControlsPanel({
           />
         ) : (
           <p className="field-note">
-            Сравнение показывает Euler, Midpoint, Heun, RK3 и RK4 бок о бок на
-            одних и тех же начальных условиях.
+            Сравнение показывает Euler, Midpoint, Heun, Ralston, RK3, RK4 и
+            RK4 (3/8) бок о бок на одних и тех же начальных условиях.
           </p>
         )}
       </Section>
@@ -109,15 +109,15 @@ export function ControlsPanel({
           value={settings.methodId}
           options={integrators.map((integrator) => ({
             value: integrator.id,
-            label: `${integrator.shortLabel} · order ${integrator.order}`,
+            label: `${integrator.shortLabel} · p${integrator.order} · точность ${integrator.accuracyRank}/5`,
           }))}
           disabled={settings.workspaceMode === 'comparison'}
-          description="Те же самые уравнения интегрируются разными приближениями. Методы низкого порядка дешевле, но обычно сильнее искажают результат."
+          description="Те же самые уравнения интегрируются разными приближениями. Шкала точности здесь практическая: 1 - самый грубый метод, 5 - самые точные из текущего набора при одинаковом dt."
           onChange={(value) => onChange({ methodId: value as StudioSettings['methodId'] })}
         />
         <p className="field-note">
           {settings.workspaceMode === 'comparison'
-            ? 'В режиме сравнения одновременно считаются Euler, Midpoint, Heun, RK3 и RK4 на одном и том же наборе параметров.'
+            ? 'В режиме сравнения одновременно считаются Euler, Midpoint, Heun, Ralston, RK3, RK4 и RK4 (3/8) на одном и том же наборе параметров.'
             : currentIntegrator?.description}
         </p>
       </Section>
