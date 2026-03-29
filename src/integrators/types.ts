@@ -6,8 +6,10 @@ export type IntegrationMethodId =
   | 'heun'
   | 'ralston'
   | 'rk3'
+  | 'bogacki_shampine'
   | 'rk4'
-  | 'rk4_38';
+  | 'rk4_38'
+  | 'dopri5';
 
 export interface IntegratorDefinition {
   id: IntegrationMethodId;

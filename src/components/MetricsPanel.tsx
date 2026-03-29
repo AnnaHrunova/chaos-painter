@@ -1,5 +1,5 @@
 import { computeDivergenceSeries } from '../simulation/comparison';
-import { getIntegrator } from '../integrators';
+import { getIntegrator, getReferenceIntegrator } from '../integrators';
 import { formatFixed, formatPercent, formatSigned } from '../lib/format';
 import type { WorkspaceMode } from '../app/model';
 import type { MetricPoint, TrajectorySeries } from '../physics/types';
@@ -27,8 +27,9 @@ export function MetricsPanel({
   frameIndex,
 }: MetricsPanelProps) {
   if (workspaceMode === 'comparison' && comparisonTrajectories.length > 0) {
+    const referenceIntegrator = getReferenceIntegrator();
     const reference =
-      comparisonTrajectories.find((trajectory) => trajectory.methodId === 'rk4') ??
+      comparisonTrajectories.find((trajectory) => trajectory.methodId === referenceIntegrator.id) ??
       comparisonTrajectories[comparisonTrajectories.length - 1];
     const energySeries = comparisonTrajectories.map(toEnergySeries);
     const divergenceSeries = comparisonTrajectories
@@ -43,10 +44,11 @@ export function MetricsPanel({
     return (
       <section className="metrics-grid">
         <MetricSummaryCard
-          title="RK4 как референс"
+          title="Референсный метод"
           lines={[
+            `${reference.methodLabel} используется как самый точный эталон текущего набора.`,
             `текущее время ${formatFixed(reference.samples[frameIndex]?.time ?? 0, 2)} s`,
-            `макс. дрейф RK4 ${formatPercent(reference.summary.maxEnergyDriftRatio)}`,
+            `макс. дрейф референса ${formatPercent(reference.summary.maxEnergyDriftRatio)}`,
             `макс. дрейф Euler ${formatPercent(
               comparisonTrajectories.find((item) => item.methodId === 'euler')?.summary
                 .maxEnergyDriftRatio ?? 0,
@@ -62,7 +64,7 @@ export function MetricsPanel({
           ]}
         />
         <ChartCard title="Дрейф энергии во времени" series={energySeries} />
-        <ChartCard title="Расхождение относительно RK4" series={divergenceSeries} />
+        <ChartCard title="Расхождение относительно референса" series={divergenceSeries} />
       </section>
     );
   }
@@ -115,8 +117,10 @@ function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
     heun: getIntegrator('heun').accentColor,
     ralston: getIntegrator('ralston').accentColor,
     rk3: getIntegrator('rk3').accentColor,
+    bogacki_shampine: getIntegrator('bogacki_shampine').accentColor,
     rk4: getIntegrator('rk4').accentColor,
     rk4_38: getIntegrator('rk4_38').accentColor,
+    dopri5: getIntegrator('dopri5').accentColor,
   };
 
   return {

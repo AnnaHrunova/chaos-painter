@@ -1,6 +1,5 @@
 /// <reference lib="webworker" />
 
-import { computeDivergenceSeries, simulateComparisonTrajectories } from '../simulation/comparison';
 import { simulateTrajectory } from '../simulation/simulateTrajectory';
 import type {
   SimulationWorkerRequest,
@@ -10,39 +9,13 @@ import type {
 self.onmessage = (event: MessageEvent<SimulationWorkerRequest>) => {
   const message = event.data;
 
-  if (message.type !== 'simulate') {
+  if (message.type !== 'simulate-trajectory') {
     return;
   }
 
   try {
-    const primaryTrajectory = simulateTrajectory({
+    const trajectory = simulateTrajectory({
       initialState: message.initialState,
-      params: message.params,
-      dt: message.dt,
-      steps: message.steps,
-      methodId: message.methodId,
-    });
-
-    const referenceTrajectory = simulateTrajectory({
-      initialState: message.initialState,
-      params: message.params,
-      dt: message.dt,
-      steps: message.steps,
-      methodId: 'rk4',
-    });
-
-    const comparisonTrajectories =
-      message.workspaceMode === 'comparison'
-        ? simulateComparisonTrajectories(
-            message.initialState,
-            message.params,
-            message.dt,
-            message.steps,
-          )
-        : [];
-
-    const nearbyTrajectory = simulateTrajectory({
-      initialState: message.nearbyState,
       params: message.params,
       dt: message.dt,
       steps: message.steps,
@@ -50,12 +23,9 @@ self.onmessage = (event: MessageEvent<SimulationWorkerRequest>) => {
     });
 
     const response: SimulationWorkerResponse = {
-      type: 'result',
+      type: 'trajectory',
       requestId: message.requestId,
-      primaryTrajectory,
-      referenceTrajectory,
-      comparisonTrajectories,
-      sensitivitySeries: computeDivergenceSeries(primaryTrajectory, nearbyTrajectory),
+      trajectory,
     };
 
     self.postMessage(response);
@@ -71,4 +41,3 @@ self.onmessage = (event: MessageEvent<SimulationWorkerRequest>) => {
 };
 
 export {};
-

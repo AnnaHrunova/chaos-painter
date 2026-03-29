@@ -35,7 +35,7 @@ export function drawCanvasScene({
   showPendulum = visualMode === 'pendulum2d',
 }: DrawCanvasSceneOptions): void {
   const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
   const width = Math.max(1, Math.floor(rect.width * dpr));
   const height = Math.max(1, Math.floor(rect.height * dpr));
 
@@ -53,12 +53,15 @@ export function drawCanvasScene({
   const samples = trajectory.samples;
   const lastIndex = clamp(frameIndex, 0, samples.length - 1);
   const artViewport = visualMode === 'chaosArt';
-  const visibleStart =
-    artViewport || keepFullPath ? 1 : Math.max(1, lastIndex - trailWindow + 1);
-  const visibleSamples = samples.slice(visibleStart - 1, lastIndex + 1);
-  const historySamples = samples.slice(0, lastIndex + 1);
+  const visibleStartIndex =
+    artViewport || keepFullPath ? 0 : Math.max(0, lastIndex - trailWindow);
+  const visibleStride = computeSampleStride(lastIndex - visibleStartIndex + 1, width, 1.35);
+  const historyStride = computeSampleStride(lastIndex + 1, width, 1.8);
+  const densityStride = computeSampleStride(lastIndex + 1, 18000, 1);
+  const visibleSamples = collectSamples(samples, visibleStartIndex, lastIndex, visibleStride);
+  const historySamples = collectSamples(samples, 0, lastIndex, historyStride);
   const extrema = computeTrajectoryExtrema(visibleSamples);
-  const worldProjection = buildWorldProjection(samples, width, height, artViewport);
+  const worldProjection = buildWorldProjection(trajectory, width, height, artViewport);
   const effectiveLabel = label ?? `${trajectory.methodLabel} · ${renderModeLabel(renderMode)}`;
 
   drawBackground(ctx, width, height, artViewport || renderMode === 'neon');
@@ -68,7 +71,8 @@ export function drawCanvasScene({
     drawWorldTrajectory(
       ctx,
       visibleSamples,
-      visibleStart - 1,
+      visibleStartIndex,
+      visibleStride,
       samples.length,
       worldProjection,
       lineWidth,
@@ -87,18 +91,33 @@ export function drawCanvasScene({
     }
   } else if (renderMode === 'density') {
     drawGrid(ctx, width, height, false);
-    drawDensityMap(ctx, historySamples, worldProjection, colorMode, width, height);
+    drawDensityMap(
+      ctx,
+      samples,
+      0,
+      lastIndex,
+      densityStride,
+      worldProjection,
+      colorMode,
+      width,
+      height,
+    );
   } else if (renderMode === 'phasePortrait') {
     drawPhasePortrait(ctx, historySamples, lineWidth, colorMode, width, height);
   } else if (renderMode === 'methodDelta') {
     drawMetricPlot(
       ctx,
-      buildMethodDeltaSeries(trajectory, referenceTrajectory).slice(0, lastIndex + 1),
+      buildMethodDeltaSeries(
+        trajectory,
+        referenceTrajectory,
+        lastIndex,
+        computeSampleStride(lastIndex + 1, width, 1.25),
+      ),
       width,
       height,
       lineWidth,
       '#ff8b5a',
-      'расстояние до RK4',
+      'расстояние до референса',
     );
   } else if (renderMode === 'energyDrift') {
     drawMetricPlot(
@@ -126,18 +145,15 @@ export function drawCanvasScene({
   );
 }
 
+const maxRadiusCache = new WeakMap<TrajectorySeries, number>();
+
 function buildWorldProjection(
-  samples: TrajectorySample[],
+  trajectory: TrajectorySeries,
   width: number,
   height: number,
   artViewport: boolean,
 ) {
-  const maxRadius =
-    samples.reduce((largest, sample) => {
-      const p1Radius = Math.hypot(sample.p1.x, sample.p1.y);
-      const p2Radius = Math.hypot(sample.p2.x, sample.p2.y);
-      return Math.max(largest, p1Radius, p2Radius);
-    }, 0) || 2;
+  const maxRadius = getTrajectoryMaxRadius(trajectory);
 
   return {
     scale: (Math.min(width, height) * (artViewport ? 0.34 : 0.26)) / maxRadius,
@@ -150,6 +166,7 @@ function drawWorldTrajectory(
   ctx: CanvasRenderingContext2D,
   visibleSamples: TrajectorySample[],
   startIndex: number,
+  stride: number,
   totalLength: number,
   projection: { scale: number; centerX: number; centerY: number },
   lineWidth: number,
@@ -168,7 +185,7 @@ function drawWorldTrajectory(
   for (let index = 1; index < visibleSamples.length; index += 1) {
     const previous = visibleSamples[index - 1];
     const current = visibleSamples[index];
-    const absoluteIndex = startIndex + index;
+    const absoluteIndex = startIndex + index * stride;
     const stroke = colorForSample(
       current,
       absoluteIndex,
@@ -198,6 +215,9 @@ function drawWorldTrajectory(
 function drawDensityMap(
   ctx: CanvasRenderingContext2D,
   samples: TrajectorySample[],
+  startIndex: number,
+  endIndex: number,
+  stride: number,
   projection: { scale: number; centerX: number; centerY: number },
   colorMode: ColorMode,
   width: number,
@@ -209,7 +229,7 @@ function drawDensityMap(
   const progress = new Float32Array(columns * rows);
   let maxCount = 1;
 
-  for (let index = 0; index < samples.length; index += 1) {
+  for (let index = startIndex; index <= endIndex; index += stride) {
     const sample = samples[index];
     const x = projection.centerX + sample.p2.x * projection.scale;
     const y = projection.centerY + sample.p2.y * projection.scale;
@@ -222,7 +242,7 @@ function drawDensityMap(
 
     const pointer = row * columns + column;
     counts[pointer] += 1;
-    progress[pointer] += index / Math.max(1, samples.length - 1);
+    progress[pointer] += index / Math.max(1, endIndex);
     maxCount = Math.max(maxCount, counts[pointer]);
   }
 
@@ -348,15 +368,20 @@ function drawMetricPlot(
 function buildMethodDeltaSeries(
   trajectory: TrajectorySeries,
   referenceTrajectory: TrajectorySeries | null,
+  endIndex: number,
+  stride: number,
 ): MetricPoint[] {
   if (!referenceTrajectory) {
-    return trajectory.samples.map((sample) => ({ time: sample.time, value: 0 }));
+    return collectSamples(trajectory.samples, 0, endIndex, stride).map((sample) => ({
+      time: sample.time,
+      value: 0,
+    }));
   }
 
-  const length = Math.min(trajectory.samples.length, referenceTrajectory.samples.length);
+  const length = Math.min(endIndex + 1, trajectory.samples.length, referenceTrajectory.samples.length);
   const points: MetricPoint[] = [];
 
-  for (let index = 0; index < length; index += 1) {
+  for (let index = 0; index < length; index += stride) {
     const current = trajectory.samples[index];
     const reference = referenceTrajectory.samples[index];
     const dx = current.p2.x - reference.p2.x;
@@ -583,6 +608,54 @@ function paddedBounds(values: number[], symmetric = false) {
   };
 }
 
+function getTrajectoryMaxRadius(trajectory: TrajectorySeries): number {
+  const cached = maxRadiusCache.get(trajectory);
+
+  if (cached) {
+    return cached;
+  }
+
+  const maxRadius =
+    trajectory.samples.reduce((largest, sample) => {
+      const p1Radius = Math.hypot(sample.p1.x, sample.p1.y);
+      const p2Radius = Math.hypot(sample.p2.x, sample.p2.y);
+      return Math.max(largest, p1Radius, p2Radius);
+    }, 0) || 2;
+
+  maxRadiusCache.set(trajectory, maxRadius);
+  return maxRadius;
+}
+
+function computeSampleStride(
+  length: number,
+  targetSamples: number,
+  overscan = 1,
+): number {
+  return Math.max(1, Math.floor(length / Math.max(1, targetSamples * overscan)));
+}
+
+function collectSamples(
+  samples: TrajectorySample[],
+  startIndex: number,
+  endIndex: number,
+  stride: number,
+): TrajectorySample[] {
+  if (endIndex < startIndex) {
+    return [];
+  }
+
+  const collected: TrajectorySample[] = [];
+  for (let index = startIndex; index <= endIndex; index += stride) {
+    collected.push(samples[index]);
+  }
+
+  if (collected[collected.length - 1] !== samples[endIndex]) {
+    collected.push(samples[endIndex]);
+  }
+
+  return collected;
+}
+
 function normalize(value: number, min: number, max: number): number {
   return clamp((value - min) / Math.max(1e-6, max - min), 0, 1);
 }
@@ -593,7 +666,7 @@ function overlaySubtitle(renderMode: RenderMode, sample: TrajectorySample): stri
   }
 
   if (renderMode === 'methodDelta') {
-    return 'расстояние до RK4 во времени';
+    return 'расстояние до референса во времени';
   }
 
   if (renderMode === 'energyDrift') {

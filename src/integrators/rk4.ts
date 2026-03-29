@@ -10,7 +10,7 @@ export const rk4Integrator: IntegratorDefinition = {
   accuracyRank: 5,
   accentColor: '#a6ff9e',
   description:
-    'Классический четырёхстадийный RK4: смотрит на наклон в начале, двух внутренних точках и в конце шага. Это основной референс fixed-step режима: обычно лучше всех держит форму траектории и энергию при том же dt.',
+    'Классический четырёхстадийный RK4: смотрит на наклон в начале, двух внутренних точках и в конце шага. Очень сильный fixed-step базовый метод: обычно хорошо держит форму траектории и энергию при том же dt.',
   step: (state, params, dt) => {
     const k1 = derivatives(state, params);
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);

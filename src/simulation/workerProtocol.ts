@@ -1,31 +1,20 @@
-import type { WorkspaceMode } from '../app/model';
 import type { IntegrationMethodId } from '../integrators/types';
-import type {
-  MetricPoint,
-  PendulumParams,
-  PendulumState,
-  TrajectorySeries,
-} from '../physics/types';
+import type { PendulumParams, PendulumState, TrajectorySeries } from '../physics/types';
 
 export interface SimulationWorkerRequest {
-  type: 'simulate';
+  type: 'simulate-trajectory';
   requestId: number;
-  workspaceMode: WorkspaceMode;
   methodId: IntegrationMethodId;
   dt: number;
   steps: number;
   initialState: PendulumState;
   params: PendulumParams;
-  nearbyState: PendulumState;
 }
 
 export interface SimulationWorkerResult {
-  type: 'result';
+  type: 'trajectory';
   requestId: number;
-  primaryTrajectory: TrajectorySeries;
-  referenceTrajectory: TrajectorySeries;
-  comparisonTrajectories: TrajectorySeries[];
-  sensitivitySeries: MetricPoint[];
+  trajectory: TrajectorySeries;
 }
 
 export interface SimulationWorkerError {
@@ -34,7 +23,4 @@ export interface SimulationWorkerError {
   message: string;
 }
 
-export type SimulationWorkerResponse =
-  | SimulationWorkerResult
-  | SimulationWorkerError;
-
+export type SimulationWorkerResponse = SimulationWorkerResult | SimulationWorkerError;

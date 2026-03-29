@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { integrators } from '../integrators';
+import { integrators, maxAccuracyRank } from '../integrators';
 import {
   colorModeOptions,
   renderModeOptions,
@@ -97,8 +97,8 @@ export function ControlsPanel({
           />
         ) : (
           <p className="field-note">
-            Сравнение показывает Euler, Midpoint, Heun, Ralston, RK3, RK4 и
-            RK4 (3/8) бок о бок на одних и тех же начальных условиях.
+            Сравнение показывает все доступные методы бок о бок на одних и тех
+            же начальных условиях.
           </p>
         )}
       </Section>
@@ -109,15 +109,15 @@ export function ControlsPanel({
           value={settings.methodId}
           options={integrators.map((integrator) => ({
             value: integrator.id,
-            label: `${integrator.shortLabel} · p${integrator.order} · точность ${integrator.accuracyRank}/5`,
+            label: `${integrator.shortLabel} · p${integrator.order} · точность ${integrator.accuracyRank}/${maxAccuracyRank}`,
           }))}
           disabled={settings.workspaceMode === 'comparison'}
-          description="Те же самые уравнения интегрируются разными приближениями. Шкала точности здесь практическая: 1 - самый грубый метод, 5 - самые точные из текущего набора при одинаковом dt."
+          description={`Те же самые уравнения интегрируются разными приближениями. Шкала точности здесь практическая: 1 - самый грубый метод, ${maxAccuracyRank} - самые точные из текущего набора при одинаковом dt.`}
           onChange={(value) => onChange({ methodId: value as StudioSettings['methodId'] })}
         />
         <p className="field-note">
           {settings.workspaceMode === 'comparison'
-            ? 'В режиме сравнения одновременно считаются Euler, Midpoint, Heun, Ralston, RK3, RK4 и RK4 (3/8) на одном и том же наборе параметров.'
+            ? 'В режиме сравнения одновременно считаются все доступные методы на одном и том же наборе параметров.'
             : currentIntegrator?.description}
         </p>
       </Section>
@@ -309,7 +309,7 @@ export function ControlsPanel({
         <p className="field-note">
           Пресеты - это готовые наборы параметров для быстрого старта. Они могут
           на секунду дольше считаться, потому что приложение заново просчитывает
-          всю траекторию, референсный RK4, близкий стартовый seed и набор для
+          всю траекторию, референсную траекторию, близкий стартовый seed и набор для
           сравнения. Но теперь это уезжает в фоновый worker, так что
           интерфейс не должен заметно фризить.
         </p>

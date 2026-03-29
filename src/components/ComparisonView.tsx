@@ -1,4 +1,4 @@
-import { getIntegrator } from '../integrators';
+import { getIntegrator, getReferenceIntegrator, maxAccuracyRank } from '../integrators';
 import { formatPercent } from '../lib/format';
 import type { StudioSettings } from '../app/model';
 import type { TrajectorySeries } from '../physics/types';
@@ -23,8 +23,9 @@ export function ComparisonView({
     );
   }
 
-  const rk4Reference =
-    trajectories.find((trajectory) => trajectory.methodId === 'rk4') ??
+  const referenceMethod = getReferenceIntegrator();
+  const referenceTrajectory =
+    trajectories.find((trajectory) => trajectory.methodId === referenceMethod.id) ??
     trajectories[trajectories.length - 1] ??
     null;
 
@@ -44,10 +45,10 @@ export function ComparisonView({
               colorMode={settings.colorMode}
               visualMode="trail2d"
               renderMode={settings.renderMode}
-              referenceTrajectory={rk4Reference}
+              referenceTrajectory={referenceTrajectory}
               showPendulum
               label={trajectory.methodLabel}
-              subtitle={`dt = ${trajectory.dt.toFixed(3)}, p${integrator.order}, точность ${integrator.accuracyRank}/5`}
+              subtitle={`dt = ${trajectory.dt.toFixed(3)}, p${integrator.order}, точность ${integrator.accuracyRank}/${maxAccuracyRank}`}
             />
             <div className="comparison-meta">
               <span>{trajectory.samples[frameIndex]?.time.toFixed(2)} s</span>

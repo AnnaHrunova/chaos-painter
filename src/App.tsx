@@ -6,11 +6,10 @@ import { MetricsPanel } from './components/MetricsPanel';
 import { StudioViewport } from './components/StudioViewport';
 import { defaultSettings, degreesToRadians, toInitialState, toPendulumParams } from './app/model';
 import { presets } from './app/presets';
+import { comparisonMethodIds, getReferenceIntegrator } from './integrators';
+import { computeDivergenceSeries } from './simulation/comparison';
+import { runTrajectoryBatch, type TrajectoryTask } from './simulation/workerClient';
 import type { MetricPoint, TrajectorySeries } from './physics/types';
-import type {
-  SimulationWorkerRequest,
-  SimulationWorkerResponse,
-} from './simulation/workerProtocol';
 
 export default function App() {
   const [settings, setSettings] = useState(defaultSettings);
@@ -23,71 +22,113 @@ export default function App() {
   const [isPending, setIsPending] = useState(true);
   const [generation, setGeneration] = useState(0);
   const captureRef = useRef<HTMLDivElement | null>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const latestRequestIdRef = useRef(0);
+  const trajectoryCacheRef = useRef<Map<string, TrajectorySeries>>(new Map());
 
   useEffect(() => {
-    const worker = new Worker(
-      new URL('./workers/simulationWorker.ts', import.meta.url),
-      { type: 'module' },
-    );
-    workerRef.current = worker;
-
-    worker.onmessage = (event: MessageEvent<SimulationWorkerResponse>) => {
-      const message = event.data;
-
-      if (message.requestId !== latestRequestIdRef.current) {
-        return;
-      }
-
-      if (message.type === 'error') {
-        console.error('Simulation worker failed:', message.message);
-        setIsPending(false);
-        return;
-      }
-
-      startTransition(() => {
-        setPrimaryTrajectory(message.primaryTrajectory);
-        setReferenceTrajectory(message.referenceTrajectory);
-        setComparisonTrajectories(message.comparisonTrajectories);
-        setSensitivitySeries(message.sensitivitySeries);
-        setFrameIndex(0);
-        setIsPending(false);
-      });
-    };
-
-    return () => {
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!workerRef.current) {
-      return;
-    }
-
     setIsPending(true);
     const initialState = toInitialState(settings);
     const params = toPendulumParams(settings);
-    const requestId = latestRequestIdRef.current + 1;
-    latestRequestIdRef.current = requestId;
-
-    const message: SimulationWorkerRequest = {
-      type: 'simulate',
-      requestId,
-      workspaceMode: settings.workspaceMode,
-      methodId: settings.methodId,
-      dt: settings.dt,
-      steps: settings.steps,
-      initialState,
-      params,
-      nearbyState: {
-        ...initialState,
-        theta2: initialState.theta2 + degreesToRadians(0.05),
-      },
+    const nearbyState = {
+      ...initialState,
+      theta2: initialState.theta2 + degreesToRadians(0.05),
     };
-    workerRef.current.postMessage(message);
+    const referenceMethod = getReferenceIntegrator();
+    const cache = trajectoryCacheRef.current;
+
+    const buildTaskKey = (
+      methodId: string,
+      state: typeof initialState,
+    ) =>
+      [
+        methodId,
+        settings.dt.toFixed(6),
+        settings.steps,
+        state.theta1.toFixed(8),
+        state.omega1.toFixed(8),
+        state.theta2.toFixed(8),
+        state.omega2.toFixed(8),
+        params.m1.toFixed(6),
+        params.m2.toFixed(6),
+        params.l1.toFixed(6),
+        params.l2.toFixed(6),
+        params.g.toFixed(6),
+      ].join('|');
+
+    const taskMap = new Map<string, TrajectoryTask>();
+
+    const addTask = (methodId: TrajectoryTask['methodId'], state: typeof initialState) => {
+      const key = buildTaskKey(methodId, state);
+      if (!cache.has(key) && !taskMap.has(key)) {
+        taskMap.set(key, {
+          key,
+          methodId,
+          dt: settings.dt,
+          steps: settings.steps,
+          initialState: state,
+          params,
+        });
+      }
+      return key;
+    };
+
+    let primaryKey: string | null = null;
+    let nearbyKey: string | null = null;
+    let referenceKey: string | null = null;
+    let comparisonKeys: string[] = [];
+
+    if (settings.workspaceMode === 'comparison') {
+      comparisonKeys = comparisonMethodIds.map((methodId) => addTask(methodId, initialState));
+      referenceKey = buildTaskKey(referenceMethod.id, initialState);
+    } else {
+      primaryKey = addTask(settings.methodId, initialState);
+      referenceKey = addTask(referenceMethod.id, initialState);
+      nearbyKey = addTask(settings.methodId, nearbyState);
+    }
+
+    const batch = runTrajectoryBatch([...taskMap.values()]);
+    let cancelled = false;
+
+    batch.promise
+      .then((freshResults) => {
+        if (cancelled) {
+          return;
+        }
+
+        for (const [key, trajectory] of freshResults) {
+          rememberTrajectory(cache, key, trajectory);
+        }
+
+        const comparisonSeries = comparisonKeys
+          .map((key) => cache.get(key))
+          .filter((trajectory): trajectory is TrajectorySeries => Boolean(trajectory));
+        const primary = primaryKey ? cache.get(primaryKey) ?? null : null;
+        const reference = referenceKey ? cache.get(referenceKey) ?? null : null;
+        const nearby = nearbyKey ? cache.get(nearbyKey) ?? null : null;
+
+        startTransition(() => {
+          setPrimaryTrajectory(primary);
+          setReferenceTrajectory(reference);
+          setComparisonTrajectories(comparisonSeries);
+          setSensitivitySeries(
+            primary && nearby ? computeDivergenceSeries(primary, nearby) : [],
+          );
+          setFrameIndex(0);
+          setIsPending(false);
+        });
+      })
+      .catch((error: Error) => {
+        if (cancelled) {
+          return;
+        }
+
+        console.error('Simulation worker batch failed:', error.message);
+        setIsPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+      batch.cancel();
+    };
   }, [
     generation,
     settings.workspaceMode,
@@ -157,9 +198,10 @@ export default function App() {
     settings.playbackStride,
   ]);
 
+  const referenceIntegrator = getReferenceIntegrator();
   const heroTrajectory =
     settings.workspaceMode === 'comparison'
-      ? comparisonTrajectories.find((trajectory) => trajectory.methodId === 'rk4') ??
+      ? comparisonTrajectories.find((trajectory) => trajectory.methodId === referenceIntegrator.id) ??
         comparisonTrajectories[comparisonTrajectories.length - 1] ??
         null
       : primaryTrajectory;
@@ -316,4 +358,25 @@ function StatChip({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function rememberTrajectory(
+  cache: Map<string, TrajectorySeries>,
+  key: string,
+  trajectory: TrajectorySeries,
+) {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+
+  cache.set(key, trajectory);
+
+  const maxEntries = 48;
+  while (cache.size > maxEntries) {
+    const oldestKey = cache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+    cache.delete(oldestKey);
+  }
 }
