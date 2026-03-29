@@ -1,3 +1,4 @@
+import { getIntegrator } from '../integrators';
 import { formatPercent } from '../lib/format';
 import type { StudioSettings } from '../app/model';
 import type { TrajectorySeries } from '../physics/types';
@@ -29,29 +30,35 @@ export function ComparisonView({
 
   return (
     <div className="comparison-grid">
-      {trajectories.map((trajectory) => (
-        <article className="comparison-card" key={trajectory.methodId}>
-          <TrajectoryCanvas2D
-            trajectory={trajectory}
-            frameIndex={frameIndex}
-            trailWindow={settings.trailWindow}
-            lineWidth={settings.lineWidth}
-            colorMode={settings.colorMode}
-            visualMode="trail2d"
-            renderMode={settings.renderMode}
-            referenceTrajectory={rk4Reference}
-            showPendulum
-            label={trajectory.methodLabel}
-            subtitle={`dt = ${trajectory.dt.toFixed(3)}, order ${trajectory.methodId === 'euler' ? 1 : trajectory.methodId === 'midpoint' ? 2 : 4}`}
-          />
-          <div className="comparison-meta">
-            <span>{trajectory.samples[frameIndex]?.time.toFixed(2)} s</span>
-            <span>
-              max drift {formatPercent(trajectory.summary.maxEnergyDriftRatio)}
-            </span>
-          </div>
-        </article>
-      ))}
+      {trajectories.map((trajectory) => {
+        const integrator = getIntegrator(trajectory.methodId);
+
+        return (
+          <article className="comparison-card" key={trajectory.methodId}>
+            <TrajectoryCanvas2D
+              trajectory={trajectory}
+              frameIndex={frameIndex}
+              trailWindow={settings.trailWindow}
+              keepFullPath={settings.keepFullPath}
+              lineWidth={settings.lineWidth}
+              colorMode={settings.colorMode}
+              visualMode="trail2d"
+              renderMode={settings.renderMode}
+              referenceTrajectory={rk4Reference}
+              showPendulum
+              label={trajectory.methodLabel}
+              subtitle={`dt = ${trajectory.dt.toFixed(3)}, order ${integrator.order}`}
+            />
+            <div className="comparison-meta">
+              <span>{trajectory.samples[frameIndex]?.time.toFixed(2)} s</span>
+              <span>
+                max drift {formatPercent(trajectory.summary.maxEnergyDriftRatio)}
+              </span>
+            </div>
+            <p className="comparison-description">{integrator.description}</p>
+          </article>
+        );
+      })}
     </div>
   );
 }

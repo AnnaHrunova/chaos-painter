@@ -7,6 +7,7 @@ interface TrajectoryCanvas2DProps {
   trajectory: TrajectorySeries | null;
   frameIndex: number;
   trailWindow: number;
+  keepFullPath: boolean;
   lineWidth: number;
   colorMode: ColorMode;
   visualMode: VisualMode;
@@ -21,6 +22,7 @@ export function TrajectoryCanvas2D({
   trajectory,
   frameIndex,
   trailWindow,
+  keepFullPath,
   lineWidth,
   colorMode,
   visualMode,
@@ -42,6 +44,7 @@ export function TrajectoryCanvas2D({
       trajectory,
       frameIndex,
       trailWindow,
+      keepFullPath,
       lineWidth,
       colorMode,
       visualMode,
@@ -55,6 +58,7 @@ export function TrajectoryCanvas2D({
     trajectory,
     frameIndex,
     trailWindow,
+    keepFullPath,
     lineWidth,
     colorMode,
     visualMode,

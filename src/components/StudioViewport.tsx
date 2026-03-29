@@ -44,6 +44,7 @@ export function StudioViewport({
         trajectory={trajectory}
         frameIndex={frameIndex}
         trailWindow={settings.trailWindow}
+        keepFullPath={settings.keepFullPath}
         lineWidth={settings.lineWidth}
         colorMode={settings.colorMode}
         visualMode={settings.visualMode}

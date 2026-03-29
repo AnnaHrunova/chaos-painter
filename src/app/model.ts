@@ -20,6 +20,7 @@ export interface StudioSettings {
   dt: number;
   steps: number;
   trailWindow: number;
+  keepFullPath: boolean;
   playbackStride: number;
   theta1Deg: number;
   theta2Deg: number;
@@ -43,6 +44,7 @@ export const defaultSettings: StudioSettings = {
   dt: 0.01,
   steps: 3200,
   trailWindow: 560,
+  keepFullPath: true,
   playbackStride: 4,
   theta1Deg: 123,
   theta2Deg: -18,

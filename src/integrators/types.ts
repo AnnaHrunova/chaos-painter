@@ -1,6 +1,11 @@
 import type { PendulumParams, PendulumState } from '../physics/types';
 
-export type IntegrationMethodId = 'euler' | 'midpoint' | 'rk4';
+export type IntegrationMethodId =
+  | 'euler'
+  | 'midpoint'
+  | 'heun'
+  | 'rk3'
+  | 'rk4';
 
 export interface IntegratorDefinition {
   id: IntegrationMethodId;
@@ -14,4 +19,3 @@ export interface IntegratorDefinition {
     dt: number,
   ) => PendulumState;
 }
-

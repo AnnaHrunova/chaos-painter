@@ -97,8 +97,8 @@ export function ControlsPanel({
           />
         ) : (
           <p className="field-note">
-            Comparison mode renders Euler, RK2, and RK4 side by side with the
-            same initial state.
+            Compare показывает Euler, Midpoint, Heun, RK3 и RK4 бок о бок на
+            одних и тех же начальных условиях.
           </p>
         )}
       </Section>
@@ -152,6 +152,12 @@ export function ControlsPanel({
           digits={0}
           description="Сколько последнего участка траектории остаётся видимым. Большие значения подчёркивают общий рисунок, маленькие - локальное движение."
           onChange={(value) => onChange({ trailWindow: Math.round(value) })}
+        />
+        <ToggleField
+          label="Keep full path"
+          checked={settings.keepFullPath}
+          description="Если включено, уже пройденный путь не исчезает, и траектория накапливается целиком от начала симуляции."
+          onChange={(checked) => onChange({ keepFullPath: checked })}
         />
         <RangeField
           label="Playback stride"
@@ -300,6 +306,11 @@ export function ControlsPanel({
       </Section>
 
       <Section title="Presets">
+        <p className="field-note">
+          Presets - это готовые наборы параметров для быстрого старта. Они могут
+          на секунду подвисать, потому что приложение заново просчитывает всю
+          траекторию, reference RK4, близкий seed и comparison-набор прямо в браузере.
+        </p>
         <div className="preset-grid">
           {presets.map((preset) => (
             <button
@@ -435,5 +446,31 @@ function Segmented({
         </button>
       ))}
     </div>
+  );
+}
+
+function ToggleField({
+  label,
+  checked,
+  description,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  description?: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="toggle-field">
+      <div className="toggle-head">
+        <span>{label}</span>
+        <input
+          checked={checked}
+          type="checkbox"
+          onChange={(event) => onChange(event.target.checked)}
+        />
+      </div>
+      {description ? <small className="field-description">{description}</small> : null}
+    </label>
   );
 }

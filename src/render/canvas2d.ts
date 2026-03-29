@@ -8,6 +8,7 @@ export interface DrawCanvasSceneOptions {
   trajectory: TrajectorySeries;
   frameIndex: number;
   trailWindow: number;
+  keepFullPath: boolean;
   lineWidth: number;
   colorMode: ColorMode;
   visualMode: VisualMode;
@@ -23,6 +24,7 @@ export function drawCanvasScene({
   trajectory,
   frameIndex,
   trailWindow,
+  keepFullPath,
   lineWidth,
   colorMode,
   visualMode,
@@ -51,7 +53,8 @@ export function drawCanvasScene({
   const samples = trajectory.samples;
   const lastIndex = clamp(frameIndex, 0, samples.length - 1);
   const artViewport = visualMode === 'chaosArt';
-  const visibleStart = artViewport ? 1 : Math.max(1, lastIndex - trailWindow + 1);
+  const visibleStart =
+    artViewport || keepFullPath ? 1 : Math.max(1, lastIndex - trailWindow + 1);
   const visibleSamples = samples.slice(visibleStart - 1, lastIndex + 1);
   const historySamples = samples.slice(0, lastIndex + 1);
   const extrema = computeTrajectoryExtrema(visibleSamples);

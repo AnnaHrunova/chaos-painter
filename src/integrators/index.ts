@@ -1,17 +1,23 @@
 import { eulerIntegrator } from './euler';
+import { heunIntegrator } from './heun';
 import { midpointIntegrator } from './midpoint';
+import { rk3Integrator } from './rk3';
 import { rk4Integrator } from './rk4';
 import type { IntegrationMethodId, IntegratorDefinition } from './types';
 
 export const integrators: IntegratorDefinition[] = [
   eulerIntegrator,
   midpointIntegrator,
+  heunIntegrator,
+  rk3Integrator,
   rk4Integrator,
 ];
 
 export const comparisonMethodIds: IntegrationMethodId[] = [
   'euler',
   'midpoint',
+  'heun',
+  'rk3',
   'rk4',
 ];
 
@@ -24,4 +30,3 @@ export function getIntegrator(methodId: IntegrationMethodId): IntegratorDefiniti
 
   return match;
 }
-
