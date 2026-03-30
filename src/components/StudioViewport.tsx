@@ -1,7 +1,12 @@
+import { Suspense, lazy } from 'react';
 import type { StudioSettings } from '../app/model';
 import type { TrajectorySeries } from '../physics/types';
 import { TrajectoryCanvas2D } from './TrajectoryCanvas2D';
-import { ThreeTrailView } from './ThreeTrailView';
+
+const ThreeTrailView = lazy(async () => {
+  const module = await import('./ThreeTrailView');
+  return { default: module.ThreeTrailView };
+});
 
 interface StudioViewportProps {
   trajectory: TrajectorySeries | null;
@@ -19,7 +24,7 @@ export function StudioViewport({
   if (!trajectory) {
     return (
       <div className="empty-state">
-        <p>Simulating the pendulum...</p>
+        <p>Симуляция маятника...</p>
       </div>
     );
   }
@@ -27,13 +32,15 @@ export function StudioViewport({
   if (settings.visualMode === 'trail3d') {
     return (
       <div className="viewport-card">
-        <ThreeTrailView
-          trajectory={trajectory}
-          frameIndex={frameIndex}
-          colorMode={settings.colorMode}
-          zAxisMode={settings.zAxisMode}
-          lineWidth={settings.lineWidth}
-        />
+        <Suspense fallback={<div className="empty-state"><p>Загружаю 3D-движок...</p></div>}>
+          <ThreeTrailView
+            trajectory={trajectory}
+            frameIndex={frameIndex}
+            colorMode={settings.colorMode}
+            zAxisMode={settings.zAxisMode}
+            lineWidth={settings.lineWidth}
+          />
+        </Suspense>
       </div>
     );
   }

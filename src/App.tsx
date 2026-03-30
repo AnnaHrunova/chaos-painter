@@ -1,5 +1,4 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
 import { ControlsPanel } from './components/ControlsPanel';
 import { ComparisonView } from './components/ComparisonView';
 import { MetricsPanel } from './components/MetricsPanel';
@@ -241,6 +240,7 @@ export default function App() {
       return;
     }
 
+    const { default: html2canvas } = await import('html2canvas');
     const canvas = await html2canvas(captureRef.current, {
       backgroundColor: '#08121c',
       scale: 2,

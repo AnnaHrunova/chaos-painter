@@ -13,7 +13,25 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     build: {
       sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/@react-three') || id.includes('node_modules/three')) {
+              return 'three';
+            }
+
+            if (id.includes('node_modules/html2canvas')) {
+              return 'export';
+            }
+
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'react-vendor';
+            }
+
+            return undefined;
+          },
+        },
+      },
     },
   };
 });
-

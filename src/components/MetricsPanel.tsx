@@ -19,6 +19,12 @@ interface ChartSeries {
   points: MetricPoint[];
 }
 
+const energySeriesCache = new WeakMap<TrajectorySeries, ChartSeries>();
+const divergenceSeriesCache = new WeakMap<
+  TrajectorySeries,
+  WeakMap<TrajectorySeries, MetricPoint[]>
+>();
+
 export function MetricsPanel({
   workspaceMode,
   primaryTrajectory,
@@ -31,14 +37,14 @@ export function MetricsPanel({
     const reference =
       comparisonTrajectories.find((trajectory) => trajectory.methodId === referenceIntegrator.id) ??
       comparisonTrajectories[comparisonTrajectories.length - 1];
-    const energySeries = comparisonTrajectories.map(toEnergySeries);
+    const energySeries = comparisonTrajectories.map(getEnergySeries);
     const divergenceSeries = comparisonTrajectories
       .filter((trajectory) => trajectory.methodId !== reference.methodId)
       .map((trajectory) => ({
         id: trajectory.methodId,
         label: `${trajectory.methodLabel} vs ${reference.methodLabel}`,
         color: getIntegrator(trajectory.methodId).accentColor,
-        points: computeDivergenceSeries(reference, trajectory),
+        points: getDivergenceSeries(reference, trajectory),
       }));
 
     return (
@@ -74,7 +80,7 @@ export function MetricsPanel({
   }
 
   const sample = primaryTrajectory.samples[frameIndex] ?? primaryTrajectory.samples[0];
-  const energySeries = [toEnergySeries(primaryTrajectory)];
+  const energySeries = [getEnergySeries(primaryTrajectory)];
 
   return (
     <section className="metrics-grid">
@@ -110,7 +116,12 @@ export function MetricsPanel({
   );
 }
 
-function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
+function getEnergySeries(trajectory: TrajectorySeries): ChartSeries {
+  const cached = energySeriesCache.get(trajectory);
+  if (cached) {
+    return cached;
+  }
+
   const palette: Record<TrajectorySeries['methodId'], string> = {
     euler: getIntegrator('euler').accentColor,
     midpoint: getIntegrator('midpoint').accentColor,
@@ -123,7 +134,7 @@ function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
     dopri5: getIntegrator('dopri5').accentColor,
   };
 
-  return {
+  const series = {
     id: trajectory.methodId,
     label: trajectory.methodLabel,
     color: palette[trajectory.methodId],
@@ -132,6 +143,30 @@ function toEnergySeries(trajectory: TrajectorySeries): ChartSeries {
       value: sample.energyDriftRatio,
     })),
   };
+
+  energySeriesCache.set(trajectory, series);
+  return series;
+}
+
+function getDivergenceSeries(
+  reference: TrajectorySeries,
+  candidate: TrajectorySeries,
+): MetricPoint[] {
+  let candidateCache = divergenceSeriesCache.get(reference);
+
+  if (!candidateCache) {
+    candidateCache = new WeakMap<TrajectorySeries, MetricPoint[]>();
+    divergenceSeriesCache.set(reference, candidateCache);
+  }
+
+  const cached = candidateCache.get(candidate);
+  if (cached) {
+    return cached;
+  }
+
+  const points = computeDivergenceSeries(reference, candidate);
+  candidateCache.set(candidate, points);
+  return points;
 }
 
 function ChartCard({
