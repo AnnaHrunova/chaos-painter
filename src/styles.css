@@ -420,6 +420,25 @@ input[type='range'] {
   gap: 14px;
 }
 
+.metrics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metrics-hint {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(92, 242, 255, 0.04), rgba(255, 122, 69, 0.03));
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.metrics-hint strong {
+  color: #d8e8f5;
+}
+
 .metric-card {
   padding: 16px;
 }
