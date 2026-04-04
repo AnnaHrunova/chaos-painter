@@ -1,5 +1,5 @@
 import { derivatives } from '../physics/pendulum';
-import { addScaledState } from '../physics/stateMath';
+import { addScaledState, combineWeightedStates } from '../physics/stateMath';
 import type { IntegratorDefinition } from './types';
 
 export const heunIntegrator: IntegratorDefinition = {
@@ -16,11 +16,13 @@ export const heunIntegrator: IntegratorDefinition = {
     const predictor = addScaledState(state, k1, dt);
     const k2 = derivatives(predictor, params);
 
-    return {
-      theta1: state.theta1 + ((k1.theta1 + k2.theta1) * dt) / 2,
-      omega1: state.omega1 + ((k1.omega1 + k2.omega1) * dt) / 2,
-      theta2: state.theta2 + ((k1.theta2 + k2.theta2) * dt) / 2,
-      omega2: state.omega2 + ((k1.omega2 + k2.omega2) * dt) / 2,
-    };
+    return addScaledState(
+      state,
+      combineWeightedStates([
+        { state: k1, weight: 0.5 },
+        { state: k2, weight: 0.5 },
+      ]),
+      dt,
+    );
   },
 };

@@ -31,8 +31,8 @@ export function computeDivergenceSeries(
   for (let index = 0; index < length; index += 1) {
     const a = reference.samples[index];
     const b = candidate.samples[index];
-    const dx = a.p2.x - b.p2.x;
-    const dy = a.p2.y - b.p2.y;
+    const dx = a.p3.x - b.p3.x;
+    const dy = a.p3.y - b.p3.y;
     points.push({
       time: a.time,
       value: Math.sqrt(dx * dx + dy * dy),
@@ -41,4 +41,3 @@ export function computeDivergenceSeries(
 
   return points;
 }
-

@@ -1,5 +1,5 @@
 import { derivatives } from '../physics/pendulum';
-import { addScaledState } from '../physics/stateMath';
+import { addScaledState, combineWeightedStates } from '../physics/stateMath';
 import type { IntegratorDefinition } from './types';
 
 export const bogackiShampineIntegrator: IntegratorDefinition = {
@@ -16,19 +16,14 @@ export const bogackiShampineIntegrator: IntegratorDefinition = {
     const k2 = derivatives(addScaledState(state, k1, dt * 0.5), params);
     const k3 = derivatives(addScaledState(state, k2, dt * 0.75), params);
 
-    return {
-      theta1:
-        state.theta1 +
-        dt * ((2 * k1.theta1) / 9 + k2.theta1 / 3 + (4 * k3.theta1) / 9),
-      omega1:
-        state.omega1 +
-        dt * ((2 * k1.omega1) / 9 + k2.omega1 / 3 + (4 * k3.omega1) / 9),
-      theta2:
-        state.theta2 +
-        dt * ((2 * k1.theta2) / 9 + k2.theta2 / 3 + (4 * k3.theta2) / 9),
-      omega2:
-        state.omega2 +
-        dt * ((2 * k1.omega2) / 9 + k2.omega2 / 3 + (4 * k3.omega2) / 9),
-    };
+    return addScaledState(
+      state,
+      combineWeightedStates([
+        { state: k1, weight: 2 / 9 },
+        { state: k2, weight: 1 / 3 },
+        { state: k3, weight: 4 / 9 },
+      ]),
+      dt,
+    );
   },
 };

@@ -93,7 +93,7 @@ export function MetricsPanel({
           title="Текущий сэмпл"
           lines={[
             `время ${formatFixed(sample.time, 2)} s`,
-            `скорость ${formatFixed(sample.speed2, 3)}`,
+            `скорость ${formatFixed(sample.speed3, 3)}`,
             `дрейф энергии ${formatSigned(sample.energyDriftRatio * 100, 2)}%`,
           ]}
         />
@@ -111,7 +111,7 @@ export function MetricsPanel({
           series={[
             {
               id: 'sensitivity',
-              label: '\u0394 theta2 = 0.05°',
+              label: '\u0394 theta3 = 0.05°',
               color: '#ff8b5a',
               points: sensitivitySeries,
             },

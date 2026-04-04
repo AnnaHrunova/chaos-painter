@@ -1,5 +1,5 @@
 import { derivatives } from '../physics/pendulum';
-import { addScaledState } from '../physics/stateMath';
+import { addScaledState, combineWeightedStates } from '../physics/stateMath';
 import type { IntegratorDefinition } from './types';
 
 export const ralstonIntegrator: IntegratorDefinition = {
@@ -16,11 +16,13 @@ export const ralstonIntegrator: IntegratorDefinition = {
     const shiftedState = addScaledState(state, k1, (dt * 2) / 3);
     const k2 = derivatives(shiftedState, params);
 
-    return {
-      theta1: state.theta1 + dt * (k1.theta1 / 4 + (3 * k2.theta1) / 4),
-      omega1: state.omega1 + dt * (k1.omega1 / 4 + (3 * k2.omega1) / 4),
-      theta2: state.theta2 + dt * (k1.theta2 / 4 + (3 * k2.theta2) / 4),
-      omega2: state.omega2 + dt * (k1.omega2 / 4 + (3 * k2.omega2) / 4),
-    };
+    return addScaledState(
+      state,
+      combineWeightedStates([
+        { state: k1, weight: 1 / 4 },
+        { state: k2, weight: 3 / 4 },
+      ]),
+      dt,
+    );
   },
 };

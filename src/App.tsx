@@ -29,7 +29,7 @@ export default function App() {
     const params = toPendulumParams(settings);
     const nearbyState = {
       ...initialState,
-      theta2: initialState.theta2 + degreesToRadians(0.05),
+      theta3: initialState.theta3 + degreesToRadians(0.05),
     };
     const referenceMethod = getReferenceIntegrator();
     const cache = trajectoryCacheRef.current;
@@ -46,10 +46,14 @@ export default function App() {
         state.omega1.toFixed(8),
         state.theta2.toFixed(8),
         state.omega2.toFixed(8),
+        state.theta3.toFixed(8),
+        state.omega3.toFixed(8),
         params.m1.toFixed(6),
         params.m2.toFixed(6),
+        params.m3.toFixed(6),
         params.l1.toFixed(6),
         params.l2.toFixed(6),
+        params.l3.toFixed(6),
         params.g.toFixed(6),
       ].join('|');
 
@@ -136,12 +140,16 @@ export default function App() {
     settings.steps,
     settings.theta1Deg,
     settings.theta2Deg,
+    settings.theta3Deg,
     settings.omega1,
     settings.omega2,
+    settings.omega3,
     settings.m1,
     settings.m2,
+    settings.m3,
     settings.l1,
     settings.l2,
+    settings.l3,
     settings.g,
   ]);
 
@@ -312,12 +320,12 @@ export default function App() {
           <section className="phenomenon-note">
             <div className="panel-kicker">Что ты видишь</div>
             <p>
-              Двойной маятник - классическая хаотическая система: её движение
-              полностью детерминировано, но крошечные различия в начальных
-              условиях или численном приближении быстро нарастают со временем.
-              Поэтому он отлично показывает и реальную чувствительность к
-              малым изменениям, и ложные артефакты, которые вносит грубая
-              интеграция.
+              Тройной маятник - ещё более жёсткая хаотическая система: её
+              движение полностью детерминировано, но крошечные различия в
+              начальных условиях или численном приближении очень быстро
+              нарастают со временем. Поэтому он особенно хорошо показывает и
+              реальную чувствительность к малым изменениям, и ложные артефакты,
+              которые вносит грубая интеграция.
             </p>
           </section>
 

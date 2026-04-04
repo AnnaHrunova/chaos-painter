@@ -52,10 +52,14 @@ export function simulateTrajectory({
     samples.push({
       state: { ...state },
       time,
+      positions: positions.positions,
+      speeds: speeds.speeds,
       p1: positions.p1,
       p2: positions.p2,
+      p3: positions.p3,
       speed1: speeds.speed1,
       speed2: speeds.speed2,
+      speed3: speeds.speed3,
       energy,
       energyDrift,
       energyDriftRatio,
@@ -82,4 +86,3 @@ export function simulateTrajectory({
     },
   };
 }
-

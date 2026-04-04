@@ -49,9 +49,10 @@ export function ControlsPanel({
           численные методы. Дальше хаос уже сам делает свою грязную работу.
         </p>
         <p className="hero-note">
-          Двойной маятник - простая детерминированная система с экстремальной
-          чувствительностью к малым изменениям. Крошечные различия в состоянии
-          или численном методе быстро превращаются в заметно разное движение.
+          Тройной маятник - ещё более капризная детерминированная система с
+          экстремальной чувствительностью к малым изменениям. Крошечные
+          различия в состоянии или численном методе быстро превращаются в
+          заметно разное движение.
         </p>
         <div className="playback-row">
           <button className="primary-button" onClick={onTogglePlay} type="button">
@@ -92,9 +93,9 @@ export function ControlsPanel({
             label="Вид"
             value={settings.visualMode}
             options={visualModeOptions}
-            description="Выбирает способ просмотра: сами стержни, плоский след траектории или 3D-экструзию пути."
-            onChange={(value) => onChange({ visualMode: value as StudioSettings['visualMode'] })}
-          />
+          description="Выбирает способ просмотра: сами стержни, плоский след траектории или 3D-экструзию пути."
+          onChange={(value) => onChange({ visualMode: value as StudioSettings['visualMode'] })}
+        />
         ) : (
           <p className="field-note">
             Сравнение показывает все доступные методы бок о бок на одних и тех
@@ -193,6 +194,16 @@ export function ControlsPanel({
           onChange={(value) => onChange({ theta2Deg: value })}
         />
         <RangeField
+          label="theta3 (deg)"
+          min={-179}
+          max={179}
+          step={1}
+          value={settings.theta3Deg}
+          digits={0}
+          description="Начальный угол третьего звена. Именно он чаще всего сильнее всего меняет форму дальнего хвоста и делает расхождение особенно быстрым."
+          onChange={(value) => onChange({ theta3Deg: value })}
+        />
+        <RangeField
           label="omega1"
           min={-2.5}
           max={2.5}
@@ -211,6 +222,16 @@ export function ControlsPanel({
           digits={2}
           description="Начальная угловая скорость второго звена. Она влияет на то, как быстро связанное движение станет запутанным."
           onChange={(value) => onChange({ omega2: value })}
+        />
+        <RangeField
+          label="omega3"
+          min={-2.5}
+          max={2.5}
+          step={0.01}
+          value={settings.omega3}
+          digits={2}
+          description="Начальная угловая скорость третьего звена. Она сильнее всего влияет на поведение дальнего конца тройного маятника."
+          onChange={(value) => onChange({ omega3: value })}
         />
       </Section>
 
@@ -236,6 +257,16 @@ export function ControlsPanel({
           onChange={(value) => onChange({ m2: value })}
         />
         <RangeField
+          label="mass 3"
+          min={0.2}
+          max={3}
+          step={0.05}
+          value={settings.m3}
+          digits={2}
+          description="Масса третьего груза. Именно она напрямую определяет инерцию самого дальнего конца и характер финального следа."
+          onChange={(value) => onChange({ m3: value })}
+        />
+        <RangeField
           label="length 1"
           min={0.4}
           max={2.2}
@@ -254,6 +285,16 @@ export function ControlsPanel({
           digits={2}
           description="Длина второго стержня. Она меняет доступную геометрию движения и плотность кривизны в следе траектории."
           onChange={(value) => onChange({ l2: value })}
+        />
+        <RangeField
+          label="length 3"
+          min={0.4}
+          max={2.2}
+          step={0.05}
+          value={settings.l3}
+          digits={2}
+          description="Длина третьего стержня. Она задаёт радиус движения самого дальнего конца и сильнее всего меняет композицию траектории."
+          onChange={(value) => onChange({ l3: value })}
         />
         <RangeField
           label="gravity"
