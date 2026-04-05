@@ -461,6 +461,20 @@ input[type='range'] {
   pointer-events: none;
 }
 
+.fractal-status-overlay {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  padding: 10px 14px;
+  border: 1px solid rgba(156, 189, 214, 0.18);
+  border-radius: 999px;
+  background: rgba(6, 11, 18, 0.76);
+  color: #d6e7f4;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.76rem;
+  backdrop-filter: blur(12px);
+}
+
 .comparison-card canvas {
   height: min(42vh, 360px);
 }

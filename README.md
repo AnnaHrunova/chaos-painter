@@ -1,19 +1,25 @@
 # Chaos Painter
 
-Chaos Painter is a browser-based laboratory for a chaotic quadruple pendulum. It keeps the physics fixed, then lets you swap numerical integration methods and step sizes to see how the same system turns into different trajectories, different energy drift, and different visual art.
+Chaos Painter has grown into a small browser-based studio with two labs:
+
+- a chaotic quadruple-pendulum playground for numerical methods and visual trajectories
+- a fractal studio for recursive geometry, adaptive detail, and generative graphics
 
 The point is not to hide the math behind a physics engine. The point is to expose the approximation itself.
 
 ## What the app does
 
 - Simulates a planar quadruple pendulum with custom equations of motion
+- Includes a dedicated fractal tab with worker-based scene generation
 - Implements multiple numerical methods manually in code, including Euler, RK2 variants, RK3 variants, RK4 variants, and Dormand-Prince RK5
 - Lets you tune initial angles, angular velocities, masses, rod lengths, gravity, dt, and simulation length
+- Lets you tune fractal depth, branching, scale, palette, glow, and animation
 - Renders the motion as:
   - 2D pendulum view
   - 2D trail view
   - 3D extruded trail view
   - chaos-art mode for long-form generative patterns
+- Renders recursive fractals such as a tree, Koch snowflake, and Sierpinski triangle
 - Compares the full set of integrators side by side with identical initial conditions
 - Shows energy drift and divergence metrics over time
 - Exports the current viewport as PNG
@@ -38,11 +44,17 @@ src/
     presets.ts          # Curated presets for illustration and art
   components/
     ControlsPanel.tsx   # Sidebar controls and preset launcher
+    FractalStudio.tsx   # Fractal lab UI + worker orchestration
     StudioViewport.tsx  # Single-view workspace
     ComparisonView.tsx  # Side-by-side method comparison
     MetricsPanel.tsx    # Energy + divergence charts
     TrajectoryCanvas2D.tsx
     ThreeTrailView.tsx
+  fractals/
+    buildScene.ts       # Worker-side fractal geometry generation
+    types.ts
+    workerClient.ts
+    workerProtocol.ts
   integrators/
     euler.ts
     midpoint.ts
@@ -61,10 +73,14 @@ src/
     stateMath.ts        # State vector arithmetic for integrators
   render/
     canvas2d.ts         # 2D pendulum / trail drawing
+    fractals.ts         # Fractal canvas rendering from worker-built scene data
     trajectory3d.ts     # 2D dynamics projected into 3D
   simulation/
     simulateTrajectory.ts
     comparison.ts
+  workers/
+    simulationWorker.ts
+    fractalWorker.ts
 ```
 
 ## Local development

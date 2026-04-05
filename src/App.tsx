@@ -289,12 +289,13 @@ export default function App() {
       <div className="hub-shell">
         <header className="hub-header">
           <div className="hub-copy">
-            <div className="panel-kicker">Увлекательная физика</div>
+            <div className="panel-kicker">Математика, хаос и геометрия</div>
             <h1>Dynamics Playground</h1>
             <p>
-              Одна страница, две лаборатории: хаотический маятник для численных
-              методов и фрактальная заготовка для рекурсии, генеративной
-              графики и будущих безумств посложнее.
+              Одна страница, две полноценные лаборатории: хаотическая механика
+              для численных методов и фрактальная студия для рекурсии,
+              самоподобия и генеративной графики. Общая идея теперь шире, чем
+              просто один маятник.
             </p>
           </div>
           <div aria-label="Выбор лаборатории" className="lab-switcher" role="tablist">

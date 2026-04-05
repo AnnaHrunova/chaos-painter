@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { startTransition, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  drawFractalScene,
-  estimateFractalElements,
+  fractalDepthLimits,
   presetDescription,
   type FractalPresetId,
+  type FractalScene,
   type FractalSettings,
-} from '../render/fractals';
+} from '../fractals/types';
+import { requestFractalScene } from '../fractals/workerClient';
+import { drawFractalScene, prepareFractalCanvas } from '../render/fractals';
 
 const fractalPresetOptions = [
   { value: 'tree', label: 'Tree' },
@@ -15,7 +17,7 @@ const fractalPresetOptions = [
 
 const defaultSettings: FractalSettings = {
   preset: 'tree',
-  depth: 7,
+  depth: 10,
   branchAngleDeg: 26,
   shrink: 0.7,
   rotationDeg: 0,
@@ -25,49 +27,133 @@ const defaultSettings: FractalSettings = {
   glow: true,
 };
 
+const ANIMATION_FRAME_MS = 1000 / 24;
+
 export function FractalStudio() {
   const [settings, setSettings] = useState(defaultSettings);
+  const [scene, setScene] = useState<FractalScene | null>(null);
+  const [isPending, setIsPending] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    let animationFrame = 0;
-    const drawNow = (time: number) => {
-      if (!canvasRef.current) {
+    if (!canvasRef.current) {
+      return;
+    }
+
+    let disposed = false;
+    let raf = 0;
+    let inFlight = false;
+    let queuedPhase: number | null = null;
+    let lastAnimationTick = 0;
+    let requestSerial = 0;
+
+    const requestScene = (phase: number) => {
+      const canvas = canvasRef.current;
+
+      if (!canvas) {
         return;
       }
 
-      drawFractalScene({
-        canvas: canvasRef.current,
-        settings,
-        phase: settings.animate ? time / 1000 : 0,
-      });
-    };
+      const canvasInfo = prepareFractalCanvas(canvas);
 
-    const draw = (time: number) => {
-      drawNow(time);
-
-      if (settings.animate) {
-        animationFrame = window.requestAnimationFrame(draw);
+      if (!canvasInfo) {
+        return;
       }
+
+      if (inFlight) {
+        queuedPhase = phase;
+        return;
+      }
+
+      inFlight = true;
+      const currentRequest = requestSerial + 1;
+      requestSerial = currentRequest;
+      setIsPending(true);
+
+      requestFractalScene({
+        settings,
+        width: canvasInfo.width,
+        height: canvasInfo.height,
+        phase,
+      })
+        .then((nextScene) => {
+          if (disposed || currentRequest !== requestSerial) {
+            return;
+          }
+
+          startTransition(() => {
+            setScene(nextScene);
+            setIsPending(false);
+          });
+        })
+        .catch((error: Error) => {
+          if (disposed || currentRequest !== requestSerial) {
+            return;
+          }
+
+          console.error('Fractal worker failed:', error.message);
+          setIsPending(false);
+        })
+        .finally(() => {
+          if (disposed || currentRequest !== requestSerial) {
+            return;
+          }
+
+          inFlight = false;
+
+          if (queuedPhase !== null) {
+            const phaseToRender = queuedPhase;
+            queuedPhase = null;
+            requestScene(phaseToRender);
+          }
+        });
     };
 
-    draw(0);
+    requestScene(0);
 
     const handleResize = () => {
-      drawNow(performance.now());
+      requestScene(settings.animate ? performance.now() / 1000 : 0);
     };
 
     window.addEventListener('resize', handleResize);
 
+    const animate = (time: number) => {
+      if (disposed || !settings.animate) {
+        return;
+      }
+
+      if (time - lastAnimationTick >= ANIMATION_FRAME_MS) {
+        lastAnimationTick = time;
+        requestScene(time / 1000);
+      }
+
+      raf = window.requestAnimationFrame(animate);
+    };
+
+    if (settings.animate) {
+      raf = window.requestAnimationFrame(animate);
+    }
+
     return () => {
+      disposed = true;
       window.removeEventListener('resize', handleResize);
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
+      if (raf) {
+        window.cancelAnimationFrame(raf);
       }
     };
   }, [settings]);
 
-  const estimatedElements = estimateFractalElements(settings.preset, settings.depth);
+  useEffect(() => {
+    if (!canvasRef.current || !scene) {
+      return;
+    }
+
+    drawFractalScene(canvasRef.current, scene, settings);
+  }, [scene, settings]);
+
+  const maxDepth = fractalDepthLimits[settings.preset];
+  const renderedElements = scene?.renderedElements ?? 0;
+  const detailRatio = scene ? `${(scene.detailRatio * 100).toFixed(2)}%` : '...';
 
   return (
     <div className="app-grid fractal-grid">
@@ -76,13 +162,14 @@ export function FractalStudio() {
           <div className="panel-kicker">Генеративная геометрия</div>
           <h1>Fractal Forge</h1>
           <p>
-            Вторая лаборатория в проекте: здесь рекурсия, самоподобие и
-            заготовка под будущие полноценные фрактальные режимы.
+            Отдельная лаборатория для рекурсии, самоподобия и генеративных
+            структур. Здесь уже не придаток к другому режиму, а самостоятельный
+            инструмент для фрактальной графики.
           </p>
           <p className="hero-note">
-            Сейчас это уже рабочий черновик, а не пустая заглушка: можно
-            гонять дерево, Коха и Серпинского, а потом без боли втащить сюда
-            Mandelbrot, Julia, orbit traps и прочие приятные безобразия.
+            Геометрия теперь считается в worker и режется адаптивно по размеру
+            видимой детали. Поэтому глубину можно крутить сильно выше прежнего,
+            не превращая интерфейс в слайд-шоу.
           </p>
         </section>
 
@@ -93,16 +180,20 @@ export function FractalStudio() {
             options={fractalPresetOptions}
             description={presetDescription(settings.preset)}
             onChange={(value) =>
-              setSettings((current) => ({
-                ...current,
-                preset: value as FractalPresetId,
-              }))
+              setSettings((current) => {
+                const preset = value as FractalPresetId;
+                return {
+                  ...current,
+                  preset,
+                  depth: Math.min(current.depth, fractalDepthLimits[preset]),
+                };
+              })
             }
           />
           <ToggleField
             label="Анимация"
             checked={settings.animate}
-            description="Немного живого движения, чтобы сразу видеть, как ведут себя угол, поворот и глубина."
+            description="Анимируется не браузерный лаг, а реальная перестройка сцены через worker в умеренном темпе."
             onChange={(checked) =>
               setSettings((current) => ({ ...current, animate: checked }))
             }
@@ -110,7 +201,7 @@ export function FractalStudio() {
           <ToggleField
             label="Свечение"
             checked={settings.glow}
-            description="Подмешивает мягкий glow к линиям и треугольникам. Чисто визуальная штука, но выглядит бодро."
+            description="Добавляет мягкий glow поверх уже рассчитанной геометрии. На производительность почти не влияет."
             onChange={(checked) =>
               setSettings((current) => ({ ...current, glow: checked }))
             }
@@ -121,11 +212,11 @@ export function FractalStudio() {
           <RangeField
             label="Глубина"
             min={1}
-            max={settings.preset === 'koch' ? 6 : 9}
+            max={maxDepth}
             step={1}
             value={settings.depth}
             digits={0}
-            description="Сколько уровней рекурсии рисовать. Дальше детали растут экспоненциально, и браузер уже начинает сопеть."
+            description={`Потолок для текущего пресета поднят до ${maxDepth}. Мелочь меньше пиксельной отсечки всё равно не рендерится, так что глубина стала полезной, а не тупо дорогой.`}
             onChange={(value) =>
               setSettings((current) => ({ ...current, depth: Math.round(value) }))
             }
@@ -137,7 +228,7 @@ export function FractalStudio() {
             step={1}
             value={settings.branchAngleDeg}
             digits={0}
-            description="Сильнее всего влияет на дерево; в других пресетах остаётся как ручка для будущих вариаций."
+            description="Сильнее всего влияет на дерево; в остальных пресетах остаётся как художественная ручка под будущие расширения."
             onChange={(value) =>
               setSettings((current) => ({ ...current, branchAngleDeg: value }))
             }
@@ -149,7 +240,7 @@ export function FractalStudio() {
             step={0.01}
             value={settings.shrink}
             digits={2}
-            description="Насколько быстро уменьшается следующий уровень рекурсии. Для дерева это одна из главных ручек."
+            description="Насколько быстро мельчает следующий уровень. Для дерева эта ручка решает, будет структура собранной или расползётся по кадру."
             onChange={(value) =>
               setSettings((current) => ({ ...current, shrink: value }))
             }
@@ -161,7 +252,7 @@ export function FractalStudio() {
             step={1}
             value={settings.rotationDeg}
             digits={0}
-            description="Поворачивает общую композицию. Удобно для поиска более собранного или более наглого кадра."
+            description="Поворачивает композицию целиком. Полезно, когда хочешь не просто другой фрактал, а другой характер кадра."
             onChange={(value) =>
               setSettings((current) => ({ ...current, rotationDeg: value }))
             }
@@ -176,7 +267,7 @@ export function FractalStudio() {
             step={0.1}
             value={settings.lineWidth}
             digits={1}
-            description="Влияет на плотность графики и на то, насколько результат смотрится инженерно или почти плакатно."
+            description="Меняет плотность и читаемость. При высокой глубине тонкие линии обычно работают чище."
             onChange={(value) =>
               setSettings((current) => ({ ...current, lineWidth: value }))
             }
@@ -188,7 +279,7 @@ export function FractalStudio() {
             step={1}
             value={settings.hueShift}
             digits={0}
-            description="Сдвиг палитры. Можно быстро уйти в холодную математику или в более тёплый арт-режим."
+            description="Сдвиг палитры: можно быстро уйти в холодную техничную графику или в более ядовитую постерную подачу."
             onChange={(value) =>
               setSettings((current) => ({ ...current, hueShift: value }))
             }
@@ -200,69 +291,74 @@ export function FractalStudio() {
         <header className="workspace-header">
           <div>
             <div className="panel-kicker">Фрактальная мастерская</div>
-            <h2>Рекурсия как отдельная лаборатория</h2>
+            <h2>Рекурсия как самостоятельная студия</h2>
             <p>
-              Тут уже можно собирать базовый генеративный pipeline: пресет,
-              глубина, геометрия и стиль. Дальше сюда легко наращивать и
-              настоящие сложные фракталы, и экспорт, и batch-рендер.
+              Эта вкладка теперь живёт отдельно: worker считает геометрию,
+              холст только рисует, а глубина упирается скорее в видимую деталь,
+              чем в тупую нагрузку на главный поток.
             </p>
           </div>
           <div className="hero-stats">
             <StatChip label="режим" value={settings.preset} />
-            <StatChip label="глубина" value={String(settings.depth)} />
-            <StatChip label="элементы" value={formatCompact(estimatedElements)} />
-            <StatChip label="анимация" value={settings.animate ? 'on' : 'off'} />
+            <StatChip label="глубина" value={`${settings.depth}/${maxDepth}`} />
+            <StatChip label="отрисовано" value={formatCompact(renderedElements)} />
+            <StatChip label="деталь" value={detailRatio} />
           </div>
         </header>
 
         <section className="phenomenon-note">
-          <div className="panel-kicker">Зачем это здесь</div>
+          <div className="panel-kicker">Что здесь важно</div>
           <p>
-            Маятники показывают хаос и численные ошибки. Фракталы добавляют
-            вторую ось проекта: рекурсию, самоподобие и генеративную графику.
-            Вместе это уже похоже на небольшую студию про увлекательную
-            математику, а не на один-единственный демо-экран.
+            Важна не голая теоретическая глубина сама по себе, а видимая
+            детализация. Поэтому сцена строится адаптивно: слишком мелкие
+            элементы просто не плодятся зря, а вычислительная тяжесть уезжает в
+            отдельный worker.
           </p>
         </section>
 
         <div className="capture-shell">
           <div className="viewport-card fractal-preview-card">
             <canvas className="fractal-canvas" ref={canvasRef} />
+            {isPending ? (
+              <div className="fractal-status-overlay">
+                <span>Пересчитываю фрактальную сцену...</span>
+              </div>
+            ) : null}
           </div>
         </div>
 
         <section className="metrics-section">
           <div className="metrics-grid">
             <MetricSummaryCard
-              title="Состояние заготовки"
+              title="Производительность"
               lines={[
-                'Есть живая отрисовка и базовые ручки управления.',
-                'Есть отдельная вкладка, визуально связанная с Chaos Painter.',
-                'Есть понятная точка роста под Mandelbrot, Julia и пакетный рендер.',
-              ]}
-            />
-            <MetricSummaryCard
-              title="Что можно вкрутить дальше"
-              lines={[
-                'Экспорт PNG / SVG и сохранение пресетов.',
-                'Шейдерный рендер для тяжёлых фракталов.',
-                'Параметрические анимации и пакетные серии кадров.',
+                'Рекурсивная геометрия считается в отдельном worker, а не в главном UI-потоке.',
+                'Адаптивная отсечка не рисует детали меньше пиксельного порога.',
+                `Фактически отрисовано ${formatCompact(renderedElements)} элементов вместо теоретической лавины.`,
               ]}
             />
             <MetricSummaryCard
               title="Текущий пресет"
               lines={[
                 presetDescription(settings.preset),
-                `Оценка элементов: ${formatCompact(estimatedElements)}`,
-                `Поворот ${settings.rotationDeg.toFixed(0)}° · hue shift ${settings.hueShift.toFixed(0)}°`,
+                `Глубина ${settings.depth} из ${maxDepth} для текущего режима.`,
+                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}°`,
               ]}
             />
             <MetricSummaryCard
-              title="Наблюдение"
+              title="Что можно вкрутить дальше"
               lines={[
-                'Даже простая рекурсия уже даёт богатый визуальный язык.',
-                'Дальше можно спокойно наращивать вычислительную сложность, не ломая интерфейс.',
-                'Короче, каркас под фрактальный режим уже не стыдный.',
+                'Mandelbrot, Julia и orbit traps на том же worker-каркасе.',
+                'Экспорт PNG / SVG и сохранение фрактальных пресетов.',
+                'Пакетный рендер кадров без убийства интерфейса.',
+              ]}
+            />
+            <MetricSummaryCard
+              title="Состояние вкладки"
+              lines={[
+                'Это уже не пустая болванка, а рабочая фрактальная лаборатория.',
+                'Основные тормоза из-за рекурсии вынесены из main thread.',
+                'Потолок глубины поднят, и теперь он реально имеет смысл.',
               ]}
             />
           </div>
