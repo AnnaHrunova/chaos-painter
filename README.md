@@ -1,12 +1,12 @@
 # Chaos Painter
 
-Chaos Painter is a browser-based laboratory for a chaotic triple pendulum. It keeps the physics fixed, then lets you swap numerical integration methods and step sizes to see how the same system turns into different trajectories, different energy drift, and different visual art.
+Chaos Painter is a browser-based laboratory for a chaotic quadruple pendulum. It keeps the physics fixed, then lets you swap numerical integration methods and step sizes to see how the same system turns into different trajectories, different energy drift, and different visual art.
 
 The point is not to hide the math behind a physics engine. The point is to expose the approximation itself.
 
 ## What the app does
 
-- Simulates a planar triple pendulum with custom equations of motion
+- Simulates a planar quadruple pendulum with custom equations of motion
 - Implements multiple numerical methods manually in code, including Euler, RK2 variants, RK3 variants, RK4 variants, and Dormand-Prince RK5
 - Lets you tune initial angles, angular velocities, masses, rod lengths, gravity, dt, and simulation length
 - Renders the motion as:
@@ -27,7 +27,7 @@ All integrators approximate the same differential equations, but they introduce 
 - RK2 / Midpoint is second-order. It behaves better than Euler, but still diverges from higher-quality solutions over longer horizons.
 - RK4 is fourth-order. For the same `dt`, it is usually the most faithful method in this app and tends to preserve the overall structure much better.
 
-Because the triple pendulum is chaotic, even small numerical differences grow over time. That is the whole show.
+Because the quadruple pendulum is chaotic, even small numerical differences grow over time. That is the whole show.
 
 ## Project structure
 
@@ -56,7 +56,7 @@ src/
     index.ts
   physics/
     types.ts
-    pendulum.ts         # Triple-pendulum equations of motion and kinematics
+    pendulum.ts         # Quadruple-pendulum equations of motion and kinematics
     energy.ts           # Total energy + drift helpers
     stateMath.ts        # State vector arithmetic for integrators
   render/
@@ -121,8 +121,8 @@ The repo includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
 
 ## Numerical notes
 
-- State vector: `[theta1, omega1, theta2, omega2, theta3, omega3]`
-- Equations: planar triple pendulum in generalized coordinates
+- State vector: `[theta1, omega1, theta2, omega2, theta3, omega3, theta4, omega4]`
+- Equations: planar quadruple pendulum in generalized coordinates
 - Physics and rendering are intentionally separated
 - The simulation precomputes trajectories when parameters change
 

@@ -7,6 +7,8 @@ const STATE_KEYS = [
   'omega2',
   'theta3',
   'omega3',
+  'theta4',
+  'omega4',
 ] as const;
 
 export function addScaledState(

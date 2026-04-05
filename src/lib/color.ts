@@ -16,7 +16,7 @@ export function computeTrajectoryExtrema(
   let maxAngularVelocity = 1e-6;
 
   for (const sample of samples) {
-    maxSpeed = Math.max(maxSpeed, sample.speed3);
+    maxSpeed = Math.max(maxSpeed, sample.speed4);
     maxEnergyDriftRatio = Math.max(
       maxEnergyDriftRatio,
       Math.abs(sample.energyDriftRatio),
@@ -48,7 +48,7 @@ export function colorForSample(
   }
 
   if (colorMode === 'speed') {
-    const intensity = clamp(sample.speed3 / extrema.maxSpeed, 0, 1);
+    const intensity = clamp(sample.speed4 / extrema.maxSpeed, 0, 1);
     return hsl(lerp(170, 340, intensity), 88, lerp(60, 70, intensity));
   }
 

@@ -53,6 +53,75 @@ button {
   overflow: hidden;
 }
 
+.hub-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hub-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(92, 242, 255, 0.08), rgba(255, 122, 69, 0.04)),
+    rgba(8, 14, 22, 0.9);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hub-copy {
+  max-width: 760px;
+}
+
+.hub-copy h1 {
+  margin: 6px 0 10px;
+  font-size: clamp(2rem, 1.5rem + 1.4vw, 3.5rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+
+.hub-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 62ch;
+}
+
+.lab-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lab-button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #dbe8f3;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.lab-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(176, 214, 236, 0.28);
+}
+
+.lab-button-active {
+  background: linear-gradient(135deg, rgba(92, 242, 255, 0.18), rgba(255, 122, 69, 0.08));
+  color: #effbff;
+  border-color: rgba(173, 200, 255, 0.3);
+}
+
 .ambient {
   position: fixed;
   inset: auto;
@@ -371,11 +440,25 @@ input[type='range'] {
 }
 
 .trajectory-canvas,
+.fractal-canvas,
 .three-shell,
 .comparison-card canvas {
   display: block;
   width: 100%;
   height: min(62vh, 640px);
+}
+
+.fractal-preview-card {
+  position: relative;
+}
+
+.fractal-preview-card::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  pointer-events: none;
 }
 
 .comparison-card canvas {
@@ -523,11 +606,16 @@ input[type='range'] {
     flex-direction: column;
   }
 
+  .hub-header {
+    flex-direction: column;
+  }
+
   .preset-grid {
     grid-template-columns: 1fr;
   }
 
   .trajectory-canvas,
+  .fractal-canvas,
   .three-shell,
   .comparison-card canvas {
     height: 52vh;

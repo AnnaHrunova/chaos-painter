@@ -6,10 +6,10 @@ export function computeTotalEnergy(
   state: PendulumState,
   params: PendulumParams,
 ): number {
-  const angles = [state.theta1, state.theta2, state.theta3] as const;
-  const omegas = [state.omega1, state.omega2, state.omega3] as const;
-  const masses = [params.m1, params.m2, params.m3] as const;
-  const lengths = [params.l1, params.l2, params.l3] as const;
+  const angles = [state.theta1, state.theta2, state.theta3, state.theta4] as const;
+  const omegas = [state.omega1, state.omega2, state.omega3, state.omega4] as const;
+  const masses = [params.m1, params.m2, params.m3, params.m4] as const;
+  const lengths = [params.l1, params.l2, params.l3, params.l4] as const;
 
   let kinetic = 0;
   let potential = 0;

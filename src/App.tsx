@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { ControlsPanel } from './components/ControlsPanel';
 import { ComparisonView } from './components/ComparisonView';
+import { FractalStudio } from './components/FractalStudio';
 import { MetricsPanel } from './components/MetricsPanel';
 import { StudioViewport } from './components/StudioViewport';
 import { defaultSettings, degreesToRadians, toInitialState, toPendulumParams } from './app/model';
@@ -10,7 +11,10 @@ import { computeDivergenceSeries } from './simulation/comparison';
 import { runTrajectoryBatch, type TrajectoryTask } from './simulation/workerClient';
 import type { MetricPoint, TrajectorySeries } from './physics/types';
 
+type LabView = 'pendulum' | 'fractal';
+
 export default function App() {
+  const [activeLab, setActiveLab] = useState<LabView>('pendulum');
   const [settings, setSettings] = useState(defaultSettings);
   const [primaryTrajectory, setPrimaryTrajectory] = useState<TrajectorySeries | null>(null);
   const [referenceTrajectory, setReferenceTrajectory] = useState<TrajectorySeries | null>(null);
@@ -24,12 +28,16 @@ export default function App() {
   const trajectoryCacheRef = useRef<Map<string, TrajectorySeries>>(new Map());
 
   useEffect(() => {
+    if (activeLab !== 'pendulum') {
+      return;
+    }
+
     setIsPending(true);
     const initialState = toInitialState(settings);
     const params = toPendulumParams(settings);
     const nearbyState = {
       ...initialState,
-      theta3: initialState.theta3 + degreesToRadians(0.05),
+      theta4: initialState.theta4 + degreesToRadians(0.05),
     };
     const referenceMethod = getReferenceIntegrator();
     const cache = trajectoryCacheRef.current;
@@ -48,12 +56,16 @@ export default function App() {
         state.omega2.toFixed(8),
         state.theta3.toFixed(8),
         state.omega3.toFixed(8),
+        state.theta4.toFixed(8),
+        state.omega4.toFixed(8),
         params.m1.toFixed(6),
         params.m2.toFixed(6),
         params.m3.toFixed(6),
+        params.m4.toFixed(6),
         params.l1.toFixed(6),
         params.l2.toFixed(6),
         params.l3.toFixed(6),
+        params.l4.toFixed(6),
         params.g.toFixed(6),
       ].join('|');
 
@@ -133,6 +145,7 @@ export default function App() {
       batch.cancel();
     };
   }, [
+    activeLab,
     generation,
     settings.workspaceMode,
     settings.methodId,
@@ -141,19 +154,27 @@ export default function App() {
     settings.theta1Deg,
     settings.theta2Deg,
     settings.theta3Deg,
+    settings.theta4Deg,
     settings.omega1,
     settings.omega2,
     settings.omega3,
+    settings.omega4,
     settings.m1,
     settings.m2,
     settings.m3,
+    settings.m4,
     settings.l1,
     settings.l2,
     settings.l3,
+    settings.l4,
     settings.g,
   ]);
 
   useEffect(() => {
+    if (activeLab !== 'pendulum') {
+      return;
+    }
+
     const activeTrajectory =
       settings.workspaceMode === 'comparison'
         ? comparisonTrajectories[comparisonTrajectories.length - 1] ?? null
@@ -198,6 +219,7 @@ export default function App() {
     animationFrame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(animationFrame);
   }, [
+    activeLab,
     isPlaying,
     primaryTrajectory,
     comparisonTrajectories,
@@ -264,96 +286,134 @@ export default function App() {
     <main className="app-shell">
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
-      <div className="app-grid">
-        <ControlsPanel
-          settings={settings}
-          isPlaying={isPlaying}
-          isPending={isPending}
-          presets={presets}
-          onChange={handleSettingsChange}
-          onApplyPreset={(preset) => {
-            setSettings((current) => ({ ...current, ...preset.patch }));
-            setFrameIndex(0);
-            setIsPlaying(true);
-          }}
-          onTogglePlay={handleTogglePlay}
-          onReset={handleReset}
-          onRegenerate={handleRegenerate}
-          onExport={handleExport}
-        />
-
-        <section className="workspace-shell">
-          <header className="workspace-header">
-            <div>
-              <div className="panel-kicker">Интерактивная лаборатория</div>
-              <h2>
-                {settings.workspaceMode === 'comparison'
-                  ? 'Сравнение интеграторов'
-                  : settings.visualMode === 'chaosArt'
-                    ? 'Режим хаос-арта'
-                    : 'Студия одной системы'}
-              </h2>
-              <p>
-                Одна и та же физика, но разные приближения. Уменьшаешь dt - и
-                численная ложь становится тише. Берёшь Euler - и она орёт уже
-                в полный голос.
-              </p>
-            </div>
-            <div className="hero-stats">
-              <StatChip label="dt" value={settings.dt.toFixed(3)} />
-              <StatChip label="шаги" value={String(settings.steps)} />
-              <StatChip
-                label="время"
-                value={currentSample ? `${currentSample.time.toFixed(2)} s` : '...'}
-              />
-              <StatChip
-                label="макс. дрейф"
-                value={
-                  heroTrajectory
-                    ? `${(heroTrajectory.summary.maxEnergyDriftRatio * 100).toFixed(2)}%`
-                    : '...'
-                }
-              />
-            </div>
-          </header>
-
-          <section className="phenomenon-note">
-            <div className="panel-kicker">Что ты видишь</div>
+      <div className="hub-shell">
+        <header className="hub-header">
+          <div className="hub-copy">
+            <div className="panel-kicker">Увлекательная физика</div>
+            <h1>Dynamics Playground</h1>
             <p>
-              Тройной маятник - ещё более жёсткая хаотическая система: её
-              движение полностью детерминировано, но крошечные различия в
-              начальных условиях или численном приближении очень быстро
-              нарастают со временем. Поэтому он особенно хорошо показывает и
-              реальную чувствительность к малым изменениям, и ложные артефакты,
-              которые вносит грубая интеграция.
+              Одна страница, две лаборатории: хаотический маятник для численных
+              методов и фрактальная заготовка для рекурсии, генеративной
+              графики и будущих безумств посложнее.
             </p>
-          </section>
-
-          <div className="capture-shell" ref={captureRef}>
-            {settings.workspaceMode === 'comparison' ? (
-              <ComparisonView
-                trajectories={comparisonTrajectories}
-                frameIndex={frameIndex}
-                settings={settings}
-              />
-            ) : (
-              <StudioViewport
-                trajectory={primaryTrajectory}
-                referenceTrajectory={referenceTrajectory}
-                frameIndex={frameIndex}
-                settings={settings}
-              />
-            )}
           </div>
+          <div aria-label="Выбор лаборатории" className="lab-switcher" role="tablist">
+            <button
+              aria-selected={activeLab === 'pendulum'}
+              className={activeLab === 'pendulum' ? 'lab-button lab-button-active' : 'lab-button'}
+              onClick={() => setActiveLab('pendulum')}
+              role="tab"
+              type="button"
+            >
+              Chaos Painter
+            </button>
+            <button
+              aria-selected={activeLab === 'fractal'}
+              className={activeLab === 'fractal' ? 'lab-button lab-button-active' : 'lab-button'}
+              onClick={() => setActiveLab('fractal')}
+              role="tab"
+              type="button"
+            >
+              Fractal Forge
+            </button>
+          </div>
+        </header>
 
-          <MetricsPanel
-            workspaceMode={settings.workspaceMode}
-            primaryTrajectory={primaryTrajectory}
-            comparisonTrajectories={comparisonTrajectories}
-            sensitivitySeries={sensitivitySeries}
-            frameIndex={frameIndex}
-          />
-        </section>
+        {activeLab === 'pendulum' ? (
+          <div className="app-grid">
+            <ControlsPanel
+              settings={settings}
+              isPlaying={isPlaying}
+              isPending={isPending}
+              presets={presets}
+              onChange={handleSettingsChange}
+              onApplyPreset={(preset) => {
+                setSettings((current) => ({ ...current, ...preset.patch }));
+                setFrameIndex(0);
+                setIsPlaying(true);
+              }}
+              onTogglePlay={handleTogglePlay}
+              onReset={handleReset}
+              onRegenerate={handleRegenerate}
+              onExport={handleExport}
+            />
+
+            <section className="workspace-shell">
+              <header className="workspace-header">
+                <div>
+                  <div className="panel-kicker">Интерактивная лаборатория</div>
+                  <h2>
+                    {settings.workspaceMode === 'comparison'
+                      ? 'Сравнение интеграторов'
+                      : settings.visualMode === 'chaosArt'
+                        ? 'Режим хаос-арта'
+                        : 'Студия одной системы'}
+                  </h2>
+                  <p>
+                    Одна и та же физика, но разные приближения. Уменьшаешь dt - и
+                    численная ложь становится тише. Берёшь Euler - и она орёт уже
+                    в полный голос.
+                  </p>
+                </div>
+                <div className="hero-stats">
+                  <StatChip label="dt" value={settings.dt.toFixed(3)} />
+                  <StatChip label="шаги" value={String(settings.steps)} />
+                  <StatChip
+                    label="время"
+                    value={currentSample ? `${currentSample.time.toFixed(2)} s` : '...'}
+                  />
+                  <StatChip
+                    label="макс. дрейф"
+                    value={
+                      heroTrajectory
+                        ? `${(heroTrajectory.summary.maxEnergyDriftRatio * 100).toFixed(2)}%`
+                        : '...'
+                    }
+                  />
+                </div>
+              </header>
+
+              <section className="phenomenon-note">
+                <div className="panel-kicker">Что ты видишь</div>
+                <p>
+                  Четверной маятник уже совсем сволочная хаотическая система: её
+                  движение полностью детерминировано, но крошечные различия в
+                  начальных условиях или численном приближении очень быстро
+                  нарастают со временем. Поэтому он ещё лучше показывает и
+                  реальную чувствительность к малым изменениям, и ложные артефакты,
+                  которые вносит грубая интеграция.
+                </p>
+              </section>
+
+              <div className="capture-shell" ref={captureRef}>
+                {settings.workspaceMode === 'comparison' ? (
+                  <ComparisonView
+                    trajectories={comparisonTrajectories}
+                    frameIndex={frameIndex}
+                    settings={settings}
+                  />
+                ) : (
+                  <StudioViewport
+                    trajectory={primaryTrajectory}
+                    referenceTrajectory={referenceTrajectory}
+                    frameIndex={frameIndex}
+                    settings={settings}
+                  />
+                )}
+              </div>
+
+              <MetricsPanel
+                workspaceMode={settings.workspaceMode}
+                primaryTrajectory={primaryTrajectory}
+                comparisonTrajectories={comparisonTrajectories}
+                sensitivitySeries={sensitivitySeries}
+                frameIndex={frameIndex}
+              />
+            </section>
+          </div>
+        ) : (
+          <FractalStudio />
+        )}
       </div>
     </main>
   );

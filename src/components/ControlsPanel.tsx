@@ -49,10 +49,9 @@ export function ControlsPanel({
           численные методы. Дальше хаос уже сам делает свою грязную работу.
         </p>
         <p className="hero-note">
-          Тройной маятник - ещё более капризная детерминированная система с
-          экстремальной чувствительностью к малым изменениям. Крошечные
-          различия в состоянии или численном методе быстро превращаются в
-          заметно разное движение.
+          Четверной маятник уже совсем бешеный: крошечные различия в состоянии
+          или численном методе быстро превращаются в другое движение, и
+          система почти сразу начинает жить своей злой жизнью.
         </p>
         <div className="playback-row">
           <button className="primary-button" onClick={onTogglePlay} type="button">
@@ -200,8 +199,18 @@ export function ControlsPanel({
           step={1}
           value={settings.theta3Deg}
           digits={0}
-          description="Начальный угол третьего звена. Именно он чаще всего сильнее всего меняет форму дальнего хвоста и делает расхождение особенно быстрым."
+          description="Начальный угол третьего звена. Он меняет промежуточную геометрию системы и сильно влияет на то, как энергия протекает к дальнему концу."
           onChange={(value) => onChange({ theta3Deg: value })}
+        />
+        <RangeField
+          label="theta4 (deg)"
+          min={-179}
+          max={179}
+          step={1}
+          value={settings.theta4Deg}
+          digits={0}
+          description="Начальный угол четвёртого звена. Именно дальний конец этой конструкции сильнее всего рвёт траекторию в неожиданные стороны."
+          onChange={(value) => onChange({ theta4Deg: value })}
         />
         <RangeField
           label="omega1"
@@ -230,8 +239,18 @@ export function ControlsPanel({
           step={0.01}
           value={settings.omega3}
           digits={2}
-          description="Начальная угловая скорость третьего звена. Она сильнее всего влияет на поведение дальнего конца тройного маятника."
+          description="Начальная угловая скорость третьего звена. Она заметно влияет на передачу импульса к четвёртому звену и на форму переходных режимов."
           onChange={(value) => onChange({ omega3: value })}
+        />
+        <RangeField
+          label="omega4"
+          min={-2.5}
+          max={2.5}
+          step={0.01}
+          value={settings.omega4}
+          digits={2}
+          description="Начальная угловая скорость четвёртого звена. На длинных прогонах именно она чаще всего первой разносит дальний хвост в хаос."
+          onChange={(value) => onChange({ omega4: value })}
         />
       </Section>
 
@@ -263,8 +282,18 @@ export function ControlsPanel({
           step={0.05}
           value={settings.m3}
           digits={2}
-          description="Масса третьего груза. Именно она напрямую определяет инерцию самого дальнего конца и характер финального следа."
+          description="Масса третьего груза. Она добавляет инерцию предпоследнему узлу и заметно меняет то, как четвёртое звено откликается на движение."
           onChange={(value) => onChange({ m3: value })}
+        />
+        <RangeField
+          label="mass 4"
+          min={0.2}
+          max={3}
+          step={0.05}
+          value={settings.m4}
+          digits={2}
+          description="Масса четвёртого груза. Она добавляет инерцию самому кончику системы и заметно меняет рисунок хвоста."
+          onChange={(value) => onChange({ m4: value })}
         />
         <RangeField
           label="length 1"
@@ -293,8 +322,18 @@ export function ControlsPanel({
           step={0.05}
           value={settings.l3}
           digits={2}
-          description="Длина третьего стержня. Она задаёт радиус движения самого дальнего конца и сильнее всего меняет композицию траектории."
+          description="Длина третьего стержня. Она задаёт рычаг перед последним звеном и сильно влияет на композицию хвоста четвёртой массы."
           onChange={(value) => onChange({ l3: value })}
+        />
+        <RangeField
+          label="length 4"
+          min={0.4}
+          max={2.2}
+          step={0.05}
+          value={settings.l4}
+          digits={2}
+          description="Длина четвёртого стержня. Она определяет последний рычаг системы и особенно сильно влияет на масштаб финального следа."
+          onChange={(value) => onChange({ l4: value })}
         />
         <RangeField
           label="gravity"
