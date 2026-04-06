@@ -43,6 +43,15 @@ export interface FractalScene {
   detailRatio: number;
 }
 
+export interface FractalFrameStats {
+  preset: FractalPresetId;
+  width: number;
+  height: number;
+  estimatedElements: number;
+  renderedElements: number;
+  detailRatio: number;
+}
+
 export interface FractalSceneInput {
   settings: FractalSettings;
   width: number;
@@ -73,12 +82,23 @@ export function estimateFractalElements(
 
 export function presetDescription(preset: FractalPresetId): string {
   if (preset === 'tree') {
-    return 'Рекурсивное дерево с адаптивной детализацией: выдерживает заметно большую глубину без истерики интерфейса.';
+    return 'Рекурсивное дерево с высокой глубиной и адаптивной отсечкой мелких ветвей.';
   }
 
   if (preset === 'koch') {
-    return 'Снежинка Коха с отсечкой по пиксельному размеру: глубину можно крутить далеко, а рисуются только видимые детали.';
+    return 'Снежинка Коха с пиксельной отсечкой: рисуются только детали, которые реально видны.';
   }
 
-  return 'Треугольник Серпинского с адаптивной нарезкой: высокая глубина остаётся полезной, а не просто жрёт CPU.';
+  return 'Треугольник Серпинского с адаптивной нарезкой для плотной рекурсивной графики.';
+}
+
+export function toFractalFrameStats(scene: FractalScene): FractalFrameStats {
+  return {
+    preset: scene.preset,
+    width: scene.width,
+    height: scene.height,
+    estimatedElements: scene.estimatedElements,
+    renderedElements: scene.renderedElements,
+    detailRatio: scene.detailRatio,
+  };
 }

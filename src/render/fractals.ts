@@ -1,16 +1,19 @@
 import type { FractalScene, FractalSettings } from '../fractals/types';
 
 export interface FractalCanvasInfo {
-  ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
 }
 
+type FractalCanvasSurface = HTMLCanvasElement | OffscreenCanvas;
+type FractalRenderingContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
 export function prepareFractalCanvas(
   canvas: HTMLCanvasElement,
+  maxDpr = 1.5,
 ): FractalCanvasInfo | null {
   const rect = canvas.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   const width = Math.max(1, Math.floor(rect.width * dpr));
   const height = Math.max(1, Math.floor(rect.height * dpr));
 
@@ -19,17 +22,11 @@ export function prepareFractalCanvas(
     canvas.height = height;
   }
 
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    return null;
-  }
-
-  return { ctx, width, height };
+  return { width, height };
 }
 
 export function drawFractalScene(
-  canvas: HTMLCanvasElement,
+  canvas: FractalCanvasSurface,
   scene: FractalScene,
   settings: FractalSettings,
 ): void {
@@ -55,8 +52,36 @@ export function drawFractalScene(
   drawOverlay(ctx, scene, settings);
 }
 
+export function presentFractalBitmap(
+  canvas: HTMLCanvasElement,
+  bitmap: ImageBitmap,
+): void {
+  if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+  }
+
+  const bitmapContext = canvas.getContext('bitmaprenderer');
+
+  if (bitmapContext) {
+    bitmapContext.transferFromImageBitmap(bitmap);
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    bitmap.close();
+    return;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+}
+
 function drawSegments(
-  ctx: CanvasRenderingContext2D,
+  ctx: FractalRenderingContext,
   scene: FractalScene,
   settings: FractalSettings,
 ): void {
@@ -81,7 +106,7 @@ function drawSegments(
 }
 
 function drawTriangles(
-  ctx: CanvasRenderingContext2D,
+  ctx: FractalRenderingContext,
   scene: FractalScene,
   settings: FractalSettings,
 ): void {
@@ -108,7 +133,7 @@ function drawTriangles(
 }
 
 function drawBackground(
-  ctx: CanvasRenderingContext2D,
+  ctx: FractalRenderingContext,
   width: number,
   height: number,
 ): void {
@@ -164,7 +189,7 @@ function drawBackground(
 }
 
 function drawOverlay(
-  ctx: CanvasRenderingContext2D,
+  ctx: FractalRenderingContext,
   scene: FractalScene,
   settings: FractalSettings,
 ): void {

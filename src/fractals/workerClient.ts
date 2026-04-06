@@ -1,29 +1,34 @@
-import type { FractalScene, FractalSceneInput } from './types';
+import type { FractalFrameStats, FractalSceneInput } from './types';
 import type {
   FractalWorkerRequest,
   FractalWorkerResponse,
 } from './workerProtocol';
+
+export interface FractalFrame {
+  bitmap: ImageBitmap;
+  stats: FractalFrameStats;
+}
 
 let worker: Worker | null = null;
 let nextRequestId = 1;
 const pending = new Map<
   number,
   {
-    resolve: (scene: FractalScene) => void;
+    resolve: (frame: FractalFrame) => void;
     reject: (error: Error) => void;
   }
 >();
 
-export function requestFractalScene(input: FractalSceneInput): Promise<FractalScene> {
+export function requestFractalFrame(input: FractalSceneInput): Promise<FractalFrame> {
   const activeWorker = getWorker();
   const requestId = nextRequestId;
   nextRequestId += 1;
 
-  return new Promise<FractalScene>((resolve, reject) => {
+  return new Promise<FractalFrame>((resolve, reject) => {
     pending.set(requestId, { resolve, reject });
 
     const request: FractalWorkerRequest = {
-      type: 'build-fractal-scene',
+      type: 'render-fractal-frame',
       requestId,
       input,
     };
@@ -56,7 +61,10 @@ function getWorker(): Worker {
       return;
     }
 
-    entry.resolve(message.scene);
+    entry.resolve({
+      bitmap: message.bitmap,
+      stats: message.stats,
+    });
   };
 
   worker.onerror = (event) => {

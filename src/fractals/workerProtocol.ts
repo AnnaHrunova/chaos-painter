@@ -1,15 +1,16 @@
-import type { FractalScene, FractalSceneInput } from './types';
+import type { FractalFrameStats, FractalSceneInput } from './types';
 
 export interface FractalWorkerRequest {
-  type: 'build-fractal-scene';
+  type: 'render-fractal-frame';
   requestId: number;
   input: FractalSceneInput;
 }
 
 export interface FractalWorkerResult {
-  type: 'fractal-scene';
+  type: 'fractal-frame';
   requestId: number;
-  scene: FractalScene;
+  bitmap: ImageBitmap;
+  stats: FractalFrameStats;
 }
 
 export interface FractalWorkerError {

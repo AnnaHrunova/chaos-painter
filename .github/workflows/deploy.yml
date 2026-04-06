@@ -45,10 +45,18 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: npm run build
 
+      - name: Package Pages artifact
+        run: |
+          tar --directory dist --file "$RUNNER_TEMP/github-pages.tar" --create .
+          gzip --force --best "$RUNNER_TEMP/github-pages.tar"
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
-          path: ./dist
+          name: github-pages
+          path: ${{ runner.temp }}/github-pages.tar.gz
+          retention-days: 1
+          compression-level: 0
 
       - name: Deploy
         id: deployment

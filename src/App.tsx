@@ -289,13 +289,12 @@ export default function App() {
       <div className="hub-shell">
         <header className="hub-header">
           <div className="hub-copy">
-            <div className="panel-kicker">Математика, хаос и геометрия</div>
-            <h1>Dynamics Playground</h1>
+            <div className="panel-kicker">Две технические секции</div>
+            <h1>Chaos Painter / Fractal Forge</h1>
             <p>
-              Одна страница, две полноценные лаборатории: хаотическая механика
-              для численных методов и фрактальная студия для рекурсии,
-              самоподобия и генеративной графики. Общая идея теперь шире, чем
-              просто один маятник.
+              Chaos Painter показывает хаотическую динамику четверного
+              маятника. Fractal Forge отвечает за рекурсивную графику и плотные
+              фрактальные структуры.
             </p>
           </div>
           <div aria-label="Выбор лаборатории" className="lab-switcher" role="tablist">
@@ -342,18 +341,17 @@ export default function App() {
             <section className="workspace-shell">
               <header className="workspace-header">
                 <div>
-                  <div className="panel-kicker">Интерактивная лаборатория</div>
+                  <div className="panel-kicker">Chaos Painter</div>
                   <h2>
                     {settings.workspaceMode === 'comparison'
-                      ? 'Сравнение интеграторов'
+                      ? 'Интеграторы'
                       : settings.visualMode === 'chaosArt'
-                        ? 'Режим хаос-арта'
-                        : 'Студия одной системы'}
+                        ? 'Chaos Art'
+                        : 'Четверной маятник'}
                   </h2>
                   <p>
-                    Одна и та же физика, но разные приближения. Уменьшаешь dt - и
-                    численная ложь становится тише. Берёшь Euler - и она орёт уже
-                    в полный голос.
+                    Четверной маятник, численные методы и наглядная разница
+                    между аккуратной интеграцией и грубым развалом траектории.
                   </p>
                 </div>
                 <div className="hero-stats">
@@ -375,14 +373,11 @@ export default function App() {
               </header>
 
               <section className="phenomenon-note">
-                <div className="panel-kicker">Что ты видишь</div>
+                <div className="panel-kicker">Что происходит</div>
                 <p>
-                  Четверной маятник уже совсем сволочная хаотическая система: её
-                  движение полностью детерминировано, но крошечные различия в
-                  начальных условиях или численном приближении очень быстро
-                  нарастают со временем. Поэтому он ещё лучше показывает и
-                  реальную чувствительность к малым изменениям, и ложные артефакты,
-                  которые вносит грубая интеграция.
+                  Здесь хаос не декоративный. Четверной маятник быстро
+                  разносит малые ошибки, поэтому сразу видно, где интегратор
+                  держит систему, а где уже начинается численная отсебятина.
                 </p>
               </section>
 
