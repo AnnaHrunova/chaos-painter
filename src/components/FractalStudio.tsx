@@ -1,13 +1,21 @@
-import { startTransition, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   fractalDepthLimits,
   presetDescription,
+  type FractalQuality,
   type FractalFrameStats,
   type FractalPresetId,
   type FractalSettings,
 } from '../fractals/types';
-import { requestFractalFrame } from '../fractals/workerClient';
-import { prepareFractalCanvas, presentFractalBitmap } from '../render/fractals';
+import { createFractalWorkerClient, type FractalWorkerClient } from '../fractals/workerClient';
+import { measureFractalCanvas } from '../render/fractals';
 
 const fractalPresetOptions = [
   { value: 'tree', label: 'Tree' },
@@ -27,126 +35,113 @@ const defaultSettings: FractalSettings = {
   glow: true,
 };
 
-const ANIMATION_FRAME_MS = 1000 / 18;
+const ANIMATION_FRAME_MS = 1000 / 15;
+const SETTLE_DELAY_MS = 180;
+const PREVIEW_STATS_INTERVAL_MS = 180;
 
 export function FractalStudio() {
   const [settings, setSettings] = useState(defaultSettings);
+  const [settledSettings, setSettledSettings] = useState(defaultSettings);
   const [stats, setStats] = useState<FractalFrameStats | null>(null);
   const [isPending, setIsPending] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const workerClientRef = useRef<FractalWorkerClient | null>(null);
+  const viewportRef = useRef<{ width: number; height: number } | null>(null);
+  const statsUpdateAtRef = useRef(0);
+  const statsKeyRef = useRef('');
+  const hasFrameRef = useRef(false);
+
+  useEffect(() => {
+    if (!canvasRef.current || workerClientRef.current) {
+      return;
+    }
+
+    const workerClient = createFractalWorkerClient(canvasRef.current);
+    workerClientRef.current = workerClient;
+
+    return () => {
+      workerClient.dispose();
+      workerClientRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setSettledSettings(settings);
+    }, SETTLE_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [settings]);
 
   useEffect(() => {
     if (!canvasRef.current) {
       return;
     }
 
-    let disposed = false;
-    let raf = 0;
-    let inFlight = false;
-    let queuedPhase: number | null = null;
-    let lastAnimationTick = 0;
-    let requestSerial = 0;
+    const canvas = canvasRef.current;
 
-    const requestScene = (phase: number, showBusyIndicator: boolean) => {
-      const canvas = canvasRef.current;
-
-      if (!canvas) {
-        return;
-      }
-
-      const canvasInfo = prepareFractalCanvas(canvas, 1.4);
-
-      if (!canvasInfo) {
-        return;
-      }
-
-      if (inFlight) {
-        queuedPhase = phase;
-        return;
-      }
-
-      inFlight = true;
-      const currentRequest = requestSerial + 1;
-      requestSerial = currentRequest;
-      if (showBusyIndicator) {
-        setIsPending(true);
-      }
-
-      requestFractalFrame({
-        settings,
-        width: canvasInfo.width,
-        height: canvasInfo.height,
-        phase,
-      })
-        .then((frame) => {
-          if (disposed || currentRequest !== requestSerial) {
-            frame.bitmap.close();
-            return;
-          }
-
-          if (!canvasRef.current) {
-            frame.bitmap.close();
-            return;
-          }
-
-          presentFractalBitmap(canvasRef.current, frame.bitmap);
-
-          startTransition(() => {
-            setStats(frame.stats);
-            setIsPending(false);
-          });
-        })
-        .catch((error: Error) => {
-          if (disposed || currentRequest !== requestSerial) {
-            return;
-          }
-
-          console.error('Fractal worker failed:', error.message);
-          setIsPending(false);
-        })
-        .finally(() => {
-          if (disposed || currentRequest !== requestSerial) {
-            return;
-          }
-
-          inFlight = false;
-
-          if (queuedPhase !== null) {
-            const phaseToRender = queuedPhase;
-            queuedPhase = null;
-            requestScene(phaseToRender, false);
-          }
-        });
+    const updateViewport = () => {
+      viewportRef.current = measureFractalCanvas(canvas, 1.15);
     };
 
-    requestScene(0, true);
+    updateViewport();
 
-    const handleResize = () => {
-      requestScene(settings.animate ? performance.now() / 1000 : 0, true);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    const animate = (time: number) => {
-      if (disposed || !settings.animate) {
-        return;
+    const observer = new ResizeObserver(() => {
+      updateViewport();
+      void requestRender(settings, 'preview', settings.animate ? performance.now() / 1000 : 0, !hasFrameRef.current);
+      if (!settings.animate) {
+        void requestRender(settledSettings, 'full', 0, true);
       }
+    });
 
-      if (time - lastAnimationTick >= ANIMATION_FRAME_MS) {
-        lastAnimationTick = time;
-        requestScene(time / 1000, false);
-      }
-
-      raf = window.requestAnimationFrame(animate);
-    };
-
-    if (settings.animate) {
-      raf = window.requestAnimationFrame(animate);
-    }
+    observer.observe(canvas);
+    window.addEventListener('resize', updateViewport);
 
     return () => {
-      disposed = true;
-      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [settings, settledSettings]);
+
+  useEffect(() => {
+    if (settings.animate) {
+      return;
+    }
+
+    void requestRender(settings, 'preview', 0, !hasFrameRef.current);
+  }, [settings]);
+
+  useEffect(() => {
+    if (settledSettings.animate) {
+      return;
+    }
+
+    void requestRender(settledSettings, 'full', 0, true);
+  }, [settledSettings]);
+
+  useEffect(() => {
+    if (!settings.animate) {
+      return;
+    }
+
+    let raf = 0;
+    let lastTick = 0;
+
+    const animate = (time: number) => {
+      if (time - lastTick >= ANIMATION_FRAME_MS) {
+        lastTick = time;
+        void requestRender(settings, 'preview', time / 1000, !hasFrameRef.current);
+      }
+
+      raf = window.requestAnimationFrame(animate);
+    };
+
+    void requestRender(settings, 'preview', performance.now() / 1000, !hasFrameRef.current);
+    raf = window.requestAnimationFrame(animate);
+
+    return () => {
       if (raf) {
         window.cancelAnimationFrame(raf);
       }
@@ -156,6 +151,91 @@ export function FractalStudio() {
   const maxDepth = fractalDepthLimits[settings.preset];
   const renderedElements = stats?.renderedElements ?? 0;
   const detailRatio = stats ? `${(stats.detailRatio * 100).toFixed(2)}%` : '...';
+  const renderQualityLabel = stats?.quality === 'preview' ? 'preview' : 'full';
+  const geometryIsSettled = useMemo(
+    () =>
+      settings.preset === settledSettings.preset &&
+      settings.depth === settledSettings.depth &&
+      settings.branchAngleDeg === settledSettings.branchAngleDeg &&
+      settings.shrink === settledSettings.shrink &&
+      settings.rotationDeg === settledSettings.rotationDeg &&
+      settings.animate === settledSettings.animate,
+    [settings, settledSettings],
+  );
+
+  async function requestRender(
+    nextSettings: FractalSettings,
+    quality: FractalQuality,
+    phase: number,
+    showBusyIndicator: boolean,
+  ): Promise<void> {
+    const workerClient = workerClientRef.current;
+    const viewport = viewportRef.current;
+
+    if (!workerClient || !viewport) {
+      return;
+    }
+
+    if (showBusyIndicator && quality === 'full') {
+      setIsPending(true);
+    }
+
+    try {
+      const nextStats = await workerClient.render({
+        settings: nextSettings,
+        width: viewport.width,
+        height: viewport.height,
+        phase,
+        quality,
+      });
+
+      hasFrameRef.current = true;
+      commitStats(nextStats);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === 'Fractal render superseded by a newer request'
+      ) {
+        return;
+      }
+
+      if (error instanceof Error) {
+        console.error('Fractal worker failed:', error.message);
+      }
+    } finally {
+      if (quality === 'full') {
+        setIsPending(false);
+      }
+    }
+  }
+
+  function commitStats(nextStats: FractalFrameStats) {
+    const now = performance.now();
+    const key = `${nextStats.quality}:${nextStats.renderedElements}:${nextStats.detailRatio.toFixed(4)}:${nextStats.cappedByBudget}`;
+
+    if (
+      nextStats.quality === 'preview' &&
+      key === statsKeyRef.current &&
+      now - statsUpdateAtRef.current < PREVIEW_STATS_INTERVAL_MS
+    ) {
+      return;
+    }
+
+    if (
+      nextStats.quality === 'preview' &&
+      now - statsUpdateAtRef.current < PREVIEW_STATS_INTERVAL_MS &&
+      nextStats.renderedElements === stats?.renderedElements
+    ) {
+      return;
+    }
+
+    statsKeyRef.current = key;
+    statsUpdateAtRef.current = now;
+
+    startTransition(() => {
+      setStats(nextStats);
+    });
+  }
 
   return (
     <div className="app-grid fractal-grid">
@@ -168,8 +248,8 @@ export function FractalStudio() {
             паттерны на отдельном холсте.
           </p>
           <p className="hero-note">
-            Сцена считается и растеризуется в worker, а на экран прилетает уже
-            готовый кадр. Поэтому UI не захлёбывается от рекурсивной лавины.
+            Worker теперь держит и расчёт, и сам рендер. Во время правки идёт
+            быстрый preview, а после паузы дорисовывается полный кадр.
           </p>
         </section>
 
@@ -193,7 +273,7 @@ export function FractalStudio() {
           <ToggleField
             label="Анимация"
             checked={settings.animate}
-            description="Worker перестраивает кадры в спокойном темпе, без лишней драки за главный поток."
+            description="При анимации вкладка живёт в preview-качестве, чтобы не душить интерфейс полной геометрией на каждый тик."
             onChange={(checked) =>
               setSettings((current) => ({ ...current, animate: checked }))
             }
@@ -201,7 +281,7 @@ export function FractalStudio() {
           <ToggleField
             label="Свечение"
             checked={settings.glow}
-            description="Добавляет мягкий glow поверх уже собранного кадра."
+            description="Glow теперь дорог только в финальном кадре. Preview рисуется без жирного размытия."
             onChange={(checked) =>
               setSettings((current) => ({ ...current, glow: checked }))
             }
@@ -302,15 +382,16 @@ export function FractalStudio() {
             <StatChip label="глубина" value={`${settings.depth}/${maxDepth}`} />
             <StatChip label="отрисовано" value={formatCompact(renderedElements)} />
             <StatChip label="деталь" value={detailRatio} />
+            <StatChip label="качество" value={renderQualityLabel} />
           </div>
         </header>
 
         <section className="phenomenon-note">
           <div className="panel-kicker">Как это едет</div>
           <p>
-            Теоретическая глубина сама по себе никому не нужна. Важна видимая
-            детализация, поэтому мелочь режется адаптивно, а тяжёлый расчёт и
-            растеризация уехали из main thread в worker.
+            Тяжёлые перестройки теперь latest-wins: старый кадр не держит новый
+            за яйца. Во время изменений рендер идёт в preview-режиме с жёстким
+            quality budget, а потом добивается полная версия.
           </p>
         </section>
 
@@ -319,7 +400,7 @@ export function FractalStudio() {
             <canvas className="fractal-canvas" ref={canvasRef} />
             {isPending ? (
               <div className="fractal-status-overlay">
-                <span>Собираю следующий кадр...</span>
+                <span>Досчитываю полный кадр...</span>
               </div>
             ) : null}
           </div>
@@ -330,8 +411,8 @@ export function FractalStudio() {
             <MetricSummaryCard
               title="Производительность"
               lines={[
-                'Расчёт и растеризация кадра вынесены в worker.',
-                'Pixel ratio у фрактального холста ограничен, чтобы не жечь GPU впустую.',
+                'Worker владеет рендером напрямую, без перегона полного bitmap на каждый кадр в main thread.',
+                'Preview и full quality разведены: во время правки ограничивается depth budget и агрессивнее режется микродеталь.',
                 `Сейчас реально рисуется ${formatCompact(renderedElements)} элементов вместо полной теоретической лавины.`,
               ]}
             />
@@ -340,7 +421,7 @@ export function FractalStudio() {
               lines={[
                 presetDescription(settings.preset),
                 `Глубина ${settings.depth} из ${maxDepth} для текущего режима.`,
-                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}°`,
+                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}° · ${geometryIsSettled ? 'full ready' : 'preview pending'}`,
               ]}
             />
             <MetricSummaryCard
@@ -355,8 +436,8 @@ export function FractalStudio() {
               title="Секция"
               lines={[
                 'Это рабочая фрактальная секция, а не заглушка.',
-                'Главный поток больше не рисует рекурсивную геометрию сам.',
-                'Повышенная глубина теперь даёт картинку, а не только тормоза.',
+                'Старая тяжёлая задача теперь не блокирует новую при смене пресета или слайдера.',
+                'Повышенная глубина теперь упирается в quality budget, а не в тупую объектную рекурсию.',
               ]}
             />
           </div>

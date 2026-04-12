@@ -289,12 +289,12 @@ export default function App() {
       <div className="hub-shell">
         <header className="hub-header">
           <div className="hub-copy">
-            <div className="panel-kicker">Две технические секции</div>
-            <h1>Chaos Painter / Fractal Forge</h1>
+            <div className="panel-kicker">Численные системы и генеративная графика</div>
+            <h1>Chaos Painter</h1>
             <p>
-              Chaos Painter показывает хаотическую динамику четверного
-              маятника. Fractal Forge отвечает за рекурсивную графику и плотные
-              фрактальные структуры.
+              Две секции в одном проекте: Pendulum Lab для хаотической динамики
+              четверного маятника и Fractal Forge для плотной рекурсивной
+              графики.
             </p>
           </div>
           <div aria-label="Выбор лаборатории" className="lab-switcher" role="tablist">
@@ -305,7 +305,7 @@ export default function App() {
               role="tab"
               type="button"
             >
-              Chaos Painter
+              Pendulum Lab
             </button>
             <button
               aria-selected={activeLab === 'fractal'}
@@ -341,7 +341,7 @@ export default function App() {
             <section className="workspace-shell">
               <header className="workspace-header">
                 <div>
-                  <div className="panel-kicker">Chaos Painter</div>
+                  <div className="panel-kicker">Pendulum Lab</div>
                   <h2>
                     {settings.workspaceMode === 'comparison'
                       ? 'Интеграторы'

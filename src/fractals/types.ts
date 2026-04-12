@@ -12,44 +12,45 @@ export interface FractalSettings {
   glow: boolean;
 }
 
-export interface FractalSegment {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  progress: number;
-  weight: number;
+export type FractalQuality = 'preview' | 'full';
+
+export interface FractalGeometrySettings {
+  preset: FractalPresetId;
+  depth: number;
+  branchAngleDeg: number;
+  shrink: number;
+  rotationDeg: number;
 }
 
-export interface FractalTriangle {
-  ax: number;
-  ay: number;
-  bx: number;
-  by: number;
-  cx: number;
-  cy: number;
-  progress: number;
+export interface FractalStyleSettings {
+  lineWidth: number;
+  hueShift: number;
+  glow: boolean;
 }
 
 export interface FractalScene {
   preset: FractalPresetId;
   width: number;
   height: number;
+  quality: FractalQuality;
   renderMode: 'segments' | 'triangles';
-  segments: FractalSegment[];
-  triangles: FractalTriangle[];
+  segmentData: Float32Array;
+  triangleData: Float32Array;
   estimatedElements: number;
   renderedElements: number;
   detailRatio: number;
+  cappedByBudget: boolean;
 }
 
 export interface FractalFrameStats {
   preset: FractalPresetId;
   width: number;
   height: number;
+  quality: FractalQuality;
   estimatedElements: number;
   renderedElements: number;
   detailRatio: number;
+  cappedByBudget: boolean;
 }
 
 export interface FractalSceneInput {
@@ -57,6 +58,7 @@ export interface FractalSceneInput {
   width: number;
   height: number;
   phase: number;
+  quality: FractalQuality;
 }
 
 export const fractalDepthLimits: Record<FractalPresetId, number> = {
@@ -97,8 +99,57 @@ export function toFractalFrameStats(scene: FractalScene): FractalFrameStats {
     preset: scene.preset,
     width: scene.width,
     height: scene.height,
+    quality: scene.quality,
     estimatedElements: scene.estimatedElements,
     renderedElements: scene.renderedElements,
     detailRatio: scene.detailRatio,
+    cappedByBudget: scene.cappedByBudget,
   };
+}
+
+export function pickGeometrySettings(
+  settings: FractalSettings,
+): FractalGeometrySettings {
+  return {
+    preset: settings.preset,
+    depth: settings.depth,
+    branchAngleDeg: settings.branchAngleDeg,
+    shrink: settings.shrink,
+    rotationDeg: settings.rotationDeg,
+  };
+}
+
+export function pickStyleSettings(
+  settings: FractalSettings,
+): FractalStyleSettings {
+  return {
+    lineWidth: settings.lineWidth,
+    hueShift: settings.hueShift,
+    glow: settings.glow,
+  };
+}
+
+export function makeGeometryCacheKey({
+  settings,
+  width,
+  height,
+  phase,
+  quality,
+}: FractalSceneInput): string {
+  const geometry = pickGeometrySettings(settings);
+  const phaseKey = settings.animate
+    ? Math.round(phase * (quality === 'preview' ? 18 : 24))
+    : 0;
+
+  return [
+    geometry.preset,
+    geometry.depth,
+    geometry.branchAngleDeg.toFixed(2),
+    geometry.shrink.toFixed(3),
+    geometry.rotationDeg.toFixed(2),
+    width,
+    height,
+    quality,
+    phaseKey,
+  ].join(':');
 }

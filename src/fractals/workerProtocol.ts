@@ -1,16 +1,25 @@
 import type { FractalFrameStats, FractalSceneInput } from './types';
 
-export interface FractalWorkerRequest {
-  type: 'render-fractal-frame';
+export interface FractalWorkerInitRequest {
+  type: 'init';
+  canvas: OffscreenCanvas;
+}
+
+export interface FractalWorkerRenderRequest {
+  type: 'render';
   requestId: number;
   input: FractalSceneInput;
 }
 
-export interface FractalWorkerResult {
-  type: 'fractal-frame';
+export type FractalWorkerRequest =
+  | FractalWorkerInitRequest
+  | FractalWorkerRenderRequest;
+
+export interface FractalWorkerRendered {
+  type: 'rendered';
   requestId: number;
-  bitmap: ImageBitmap;
   stats: FractalFrameStats;
+  bitmap?: ImageBitmap;
 }
 
 export interface FractalWorkerError {
@@ -19,4 +28,6 @@ export interface FractalWorkerError {
   message: string;
 }
 
-export type FractalWorkerResponse = FractalWorkerResult | FractalWorkerError;
+export type FractalWorkerResponse =
+  | FractalWorkerRendered
+  | FractalWorkerError;

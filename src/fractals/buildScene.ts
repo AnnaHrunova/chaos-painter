@@ -1,292 +1,359 @@
 import {
   estimateFractalElements,
+  type FractalPresetId,
+  type FractalQuality,
   type FractalScene,
   type FractalSceneInput,
-  type FractalSegment,
-  type FractalSettings,
-  type FractalTriangle,
 } from './types';
 
-interface Point2D {
-  x: number;
-  y: number;
+const SEGMENT_STRIDE = 6;
+const TRIANGLE_STRIDE = 7;
+const CANCELLED_ERROR = 'FRACTAL_BUILD_CANCELLED';
+const YIELD_INTERVAL = 768;
+
+interface QualityProfile {
+  maxElements: number;
+  minScale: number;
+  maxDepth: number;
 }
 
-export function buildFractalScene({
-  settings,
-  width,
-  height,
-  phase,
-}: FractalSceneInput): FractalScene {
-  const estimatedElements = estimateFractalElements(settings.preset, settings.depth);
+interface BuildGuard {
+  shouldCancel: () => boolean;
+}
 
-  if (settings.preset === 'tree') {
-    const segments = buildTreeSegments(width, height, settings, phase);
+const qualityProfiles: Record<
+  FractalQuality,
+  Record<FractalPresetId, QualityProfile>
+> = {
+  preview: {
+    tree: { maxElements: 7_500, minScale: 0.0046, maxDepth: 11 },
+    koch: { maxElements: 8_500, minScale: 0.0038, maxDepth: 8 },
+    sierpinski: { maxElements: 11_000, minScale: 0.0042, maxDepth: 10 },
+  },
+  full: {
+    tree: { maxElements: 24_000, minScale: 0.0022, maxDepth: 15 },
+    koch: { maxElements: 22_000, minScale: 0.0017, maxDepth: 11 },
+    sierpinski: { maxElements: 32_000, minScale: 0.0020, maxDepth: 13 },
+  },
+};
+
+export function isFractalBuildCancelled(error: unknown): boolean {
+  return error instanceof Error && error.message === CANCELLED_ERROR;
+}
+
+export async function buildFractalScene(
+  input: FractalSceneInput,
+  guard: BuildGuard,
+): Promise<FractalScene> {
+  const estimatedElements = estimateFractalElements(
+    input.settings.preset,
+    input.settings.depth,
+  );
+
+  if (input.settings.preset === 'tree') {
+    const result = await buildTreeSegments(input, guard);
     return {
-      preset: settings.preset,
-      width,
-      height,
+      preset: input.settings.preset,
+      width: input.width,
+      height: input.height,
+      quality: input.quality,
       renderMode: 'segments',
-      segments,
-      triangles: [],
+      segmentData: result.data,
+      triangleData: new Float32Array(0),
       estimatedElements,
-      renderedElements: segments.length,
-      detailRatio: segments.length / Math.max(1, estimatedElements),
+      renderedElements: result.renderedElements,
+      detailRatio: result.renderedElements / Math.max(1, estimatedElements),
+      cappedByBudget: result.cappedByBudget,
     };
   }
 
-  if (settings.preset === 'koch') {
-    const segments = buildKochSegments(width, height, settings, phase);
+  if (input.settings.preset === 'koch') {
+    const result = await buildKochSegments(input, guard);
     return {
-      preset: settings.preset,
-      width,
-      height,
+      preset: input.settings.preset,
+      width: input.width,
+      height: input.height,
+      quality: input.quality,
       renderMode: 'segments',
-      segments,
-      triangles: [],
+      segmentData: result.data,
+      triangleData: new Float32Array(0),
       estimatedElements,
-      renderedElements: segments.length,
-      detailRatio: segments.length / Math.max(1, estimatedElements),
+      renderedElements: result.renderedElements,
+      detailRatio: result.renderedElements / Math.max(1, estimatedElements),
+      cappedByBudget: result.cappedByBudget,
     };
   }
 
-  const triangles = buildSierpinskiTriangles(width, height, settings, phase);
+  const result = await buildSierpinskiTriangles(input, guard);
   return {
-    preset: settings.preset,
-    width,
-    height,
+    preset: input.settings.preset,
+    width: input.width,
+    height: input.height,
+    quality: input.quality,
     renderMode: 'triangles',
-    segments: [],
-    triangles,
+    segmentData: new Float32Array(0),
+    triangleData: result.data,
     estimatedElements,
-    renderedElements: triangles.length,
-    detailRatio: triangles.length / Math.max(1, estimatedElements),
+    renderedElements: result.renderedElements,
+    detailRatio: result.renderedElements / Math.max(1, estimatedElements),
+    cappedByBudget: result.cappedByBudget,
   };
 }
 
-function buildTreeSegments(
-  width: number,
-  height: number,
-  settings: FractalSettings,
-  phase: number,
-): FractalSegment[] {
-  const segments: FractalSegment[] = [];
-  const baseLength = Math.min(width, height) * 0.16;
+async function buildTreeSegments(
+  input: FractalSceneInput,
+  guard: BuildGuard,
+): Promise<{
+  data: Float32Array;
+  renderedElements: number;
+  cappedByBudget: boolean;
+}> {
+  const profile = qualityProfiles[input.quality].tree;
+  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const minDimension = Math.min(input.width, input.height);
+  const baseLength = minDimension * 0.16;
   const branchAngle =
-    degreesToRadians(settings.branchAngleDeg) *
-    (1 + (settings.animate ? Math.sin(phase * 1.25) * 0.12 : 0));
-  const trunkAngle = -Math.PI / 2 + degreesToRadians(settings.rotationDeg);
-  const sway = settings.animate ? Math.sin(phase * 0.9) * 0.08 : 0;
-  const minLength = Math.max(1.2, Math.min(width, height) * 0.0016);
+    degreesToRadians(input.settings.branchAngleDeg) *
+    (1 + (input.settings.animate ? Math.sin(input.phase * 1.25) * 0.12 : 0));
+  const trunkAngle = -Math.PI / 2 + degreesToRadians(input.settings.rotationDeg);
+  const sway = input.settings.animate ? Math.sin(input.phase * 0.9) * 0.08 : 0;
+  const minLength = Math.max(1.2, minDimension * profile.minScale);
+  const output: number[] = [];
+  const stack = [input.width * 0.5, input.height * 0.88, baseLength, trunkAngle, maxDepth];
+  let processed = 0;
+  let cappedByBudget = false;
 
-  appendTreeBranch(
-    segments,
-    width * 0.5,
-    height * 0.88,
-    baseLength,
-    trunkAngle,
-    settings.depth,
-    settings.depth,
-    branchAngle,
-    sway,
-    settings,
-    phase,
-    minLength,
-  );
+  while (stack.length > 0) {
+    const depth = stack.pop() as number;
+    const angle = stack.pop() as number;
+    const length = stack.pop() as number;
+    const y = stack.pop() as number;
+    const x = stack.pop() as number;
 
-  return segments;
-}
+    if (depth <= 0 || length < minLength) {
+      continue;
+    }
 
-function appendTreeBranch(
-  segments: FractalSegment[],
-  x: number,
-  y: number,
-  length: number,
-  angle: number,
-  depth: number,
-  maxDepth: number,
-  branchAngle: number,
-  sway: number,
-  settings: FractalSettings,
-  phase: number,
-  minLength: number,
-): void {
-  if (depth <= 0 || length < minLength) {
-    return;
+    if (output.length / SEGMENT_STRIDE >= profile.maxElements) {
+      cappedByBudget = true;
+      break;
+    }
+
+    const progress = 1 - depth / Math.max(1, maxDepth);
+    const endX = x + Math.cos(angle) * length;
+    const endY = y + Math.sin(angle) * length;
+
+    output.push(x, y, endX, endY, progress, depth / Math.max(1, maxDepth));
+
+    const nextLength = length * input.settings.shrink;
+    const nextDepth = depth - 1;
+
+    if (nextDepth > 0 && nextLength >= minLength) {
+      const ripple = input.settings.animate
+        ? Math.sin(input.phase * 1.7 + depth) * 0.04
+        : 0;
+
+      stack.push(
+        endX,
+        endY,
+        nextLength,
+        angle + branchAngle + sway - ripple,
+        nextDepth,
+      );
+      stack.push(
+        endX,
+        endY,
+        nextLength,
+        angle - branchAngle + sway + ripple,
+        nextDepth,
+      );
+    }
+
+    processed += 1;
+    if (processed % YIELD_INTERVAL === 0) {
+      await yieldIfNeeded(guard);
+    }
   }
 
-  const progress = 1 - depth / Math.max(1, maxDepth);
-  const endX = x + Math.cos(angle) * length;
-  const endY = y + Math.sin(angle) * length;
-
-  segments.push({
-    x1: x,
-    y1: y,
-    x2: endX,
-    y2: endY,
-    progress,
-    weight: depth / Math.max(1, maxDepth),
-  });
-
-  const nextLength = length * settings.shrink;
-  const ripple = settings.animate ? Math.sin(phase * 1.7 + depth) * 0.04 : 0;
-
-  appendTreeBranch(
-    segments,
-    endX,
-    endY,
-    nextLength,
-    angle - branchAngle + sway + ripple,
-    depth - 1,
-    maxDepth,
-    branchAngle,
-    sway,
-    settings,
-    phase,
-    minLength,
-  );
-  appendTreeBranch(
-    segments,
-    endX,
-    endY,
-    nextLength,
-    angle + branchAngle + sway - ripple,
-    depth - 1,
-    maxDepth,
-    branchAngle,
-    sway,
-    settings,
-    phase,
-    minLength,
-  );
-}
-
-function buildKochSegments(
-  width: number,
-  height: number,
-  settings: FractalSettings,
-  phase: number,
-): FractalSegment[] {
-  const radius = Math.min(width, height) * 0.24;
-  const centerX = width * 0.5;
-  const centerY = height * 0.54;
-  const rotation =
-    degreesToRadians(settings.rotationDeg) +
-    (settings.animate ? Math.sin(phase * 0.7) * 0.08 : 0);
-  const vertices = buildRegularTriangle(centerX, centerY, radius, rotation);
-  const segments: FractalSegment[] = [];
-  const minSegment = Math.max(0.9, Math.min(width, height) * 0.00125);
-
-  appendKochSegment(vertices[0], vertices[1], settings.depth, settings.depth, minSegment, segments);
-  appendKochSegment(vertices[1], vertices[2], settings.depth, settings.depth, minSegment, segments);
-  appendKochSegment(vertices[2], vertices[0], settings.depth, settings.depth, minSegment, segments);
-
-  return segments;
-}
-
-function appendKochSegment(
-  start: Point2D,
-  end: Point2D,
-  depth: number,
-  maxDepth: number,
-  minSegment: number,
-  segments: FractalSegment[],
-): void {
-  const length = Math.hypot(end.x - start.x, end.y - start.y);
-
-  if (depth === 0 || length < minSegment) {
-    segments.push({
-      x1: start.x,
-      y1: start.y,
-      x2: end.x,
-      y2: end.y,
-      progress: 1 - depth / Math.max(1, maxDepth),
-      weight: 0.72,
-    });
-    return;
-  }
-
-  const dx = (end.x - start.x) / 3;
-  const dy = (end.y - start.y) / 3;
-  const p1 = { x: start.x + dx, y: start.y + dy };
-  const p3 = { x: start.x + dx * 2, y: start.y + dy * 2 };
-  const segmentLength = Math.hypot(dx, dy);
-  const angle = Math.atan2(dy, dx) - Math.PI / 3;
-  const p2 = {
-    x: p1.x + Math.cos(angle) * segmentLength,
-    y: p1.y + Math.sin(angle) * segmentLength,
+  return {
+    data: Float32Array.from(output),
+    renderedElements: output.length / SEGMENT_STRIDE,
+    cappedByBudget,
   };
-
-  appendKochSegment(start, p1, depth - 1, maxDepth, minSegment, segments);
-  appendKochSegment(p1, p2, depth - 1, maxDepth, minSegment, segments);
-  appendKochSegment(p2, p3, depth - 1, maxDepth, minSegment, segments);
-  appendKochSegment(p3, end, depth - 1, maxDepth, minSegment, segments);
 }
 
-function buildSierpinskiTriangles(
-  width: number,
-  height: number,
-  settings: FractalSettings,
-  phase: number,
-): FractalTriangle[] {
-  const radius = Math.min(width, height) * 0.26;
-  const centerX = width * 0.5;
-  const centerY = height * 0.55;
+async function buildKochSegments(
+  input: FractalSceneInput,
+  guard: BuildGuard,
+): Promise<{
+  data: Float32Array;
+  renderedElements: number;
+  cappedByBudget: boolean;
+}> {
+  const profile = qualityProfiles[input.quality].koch;
+  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const minDimension = Math.min(input.width, input.height);
+  const radius = minDimension * 0.24;
+  const centerX = input.width * 0.5;
+  const centerY = input.height * 0.54;
   const rotation =
-    degreesToRadians(settings.rotationDeg) +
-    (settings.animate ? Math.sin(phase * 0.55) * 0.06 : 0);
+    degreesToRadians(input.settings.rotationDeg) +
+    (input.settings.animate ? Math.sin(input.phase * 0.7) * 0.08 : 0);
   const vertices = buildRegularTriangle(centerX, centerY, radius, rotation);
-  const triangles: FractalTriangle[] = [];
-  const minEdge = Math.max(1.4, Math.min(width, height) * 0.0017);
+  const minSegment = Math.max(0.9, minDimension * profile.minScale);
+  const output: number[] = [];
+  const stack = [
+    vertices[0][0],
+    vertices[0][1],
+    vertices[1][0],
+    vertices[1][1],
+    maxDepth,
+    vertices[1][0],
+    vertices[1][1],
+    vertices[2][0],
+    vertices[2][1],
+    maxDepth,
+    vertices[2][0],
+    vertices[2][1],
+    vertices[0][0],
+    vertices[0][1],
+    maxDepth,
+  ];
+  let processed = 0;
+  let cappedByBudget = false;
 
-  appendSierpinskiTriangle(
-    triangles,
-    vertices[0],
-    vertices[1],
-    vertices[2],
-    settings.depth,
-    settings.depth,
-    minEdge,
-  );
+  while (stack.length > 0) {
+    const depth = stack.pop() as number;
+    const endY = stack.pop() as number;
+    const endX = stack.pop() as number;
+    const startY = stack.pop() as number;
+    const startX = stack.pop() as number;
+    const length = Math.hypot(endX - startX, endY - startY);
 
-  return triangles;
-}
+    if (depth === 0 || length < minSegment) {
+      if (output.length / SEGMENT_STRIDE >= profile.maxElements) {
+        cappedByBudget = true;
+        break;
+      }
 
-function appendSierpinskiTriangle(
-  triangles: FractalTriangle[],
-  a: Point2D,
-  b: Point2D,
-  c: Point2D,
-  depth: number,
-  maxDepth: number,
-  minEdge: number,
-): void {
-  const edge = Math.max(
-    Math.hypot(b.x - a.x, b.y - a.y),
-    Math.hypot(c.x - b.x, c.y - b.y),
-    Math.hypot(a.x - c.x, a.y - c.y),
-  );
+      output.push(
+        startX,
+        startY,
+        endX,
+        endY,
+        1 - depth / Math.max(1, maxDepth),
+        0.72,
+      );
+    } else {
+      const dx = (endX - startX) / 3;
+      const dy = (endY - startY) / 3;
+      const p1x = startX + dx;
+      const p1y = startY + dy;
+      const p3x = startX + dx * 2;
+      const p3y = startY + dy * 2;
+      const segmentLength = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx) - Math.PI / 3;
+      const p2x = p1x + Math.cos(angle) * segmentLength;
+      const p2y = p1y + Math.sin(angle) * segmentLength;
+      const nextDepth = depth - 1;
 
-  if (depth === 0 || edge < minEdge) {
-    triangles.push({
-      ax: a.x,
-      ay: a.y,
-      bx: b.x,
-      by: b.y,
-      cx: c.x,
-      cy: c.y,
-      progress: 1 - depth / Math.max(1, maxDepth),
-    });
-    return;
+      stack.push(p3x, p3y, endX, endY, nextDepth);
+      stack.push(p2x, p2y, p3x, p3y, nextDepth);
+      stack.push(p1x, p1y, p2x, p2y, nextDepth);
+      stack.push(startX, startY, p1x, p1y, nextDepth);
+    }
+
+    processed += 1;
+    if (processed % YIELD_INTERVAL === 0) {
+      await yieldIfNeeded(guard);
+    }
   }
 
-  const ab = midpoint(a, b);
-  const bc = midpoint(b, c);
-  const ca = midpoint(c, a);
+  return {
+    data: Float32Array.from(output),
+    renderedElements: output.length / SEGMENT_STRIDE,
+    cappedByBudget,
+  };
+}
 
-  appendSierpinskiTriangle(triangles, a, ab, ca, depth - 1, maxDepth, minEdge);
-  appendSierpinskiTriangle(triangles, ab, b, bc, depth - 1, maxDepth, minEdge);
-  appendSierpinskiTriangle(triangles, ca, bc, c, depth - 1, maxDepth, minEdge);
+async function buildSierpinskiTriangles(
+  input: FractalSceneInput,
+  guard: BuildGuard,
+): Promise<{
+  data: Float32Array;
+  renderedElements: number;
+  cappedByBudget: boolean;
+}> {
+  const profile = qualityProfiles[input.quality].sierpinski;
+  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const minDimension = Math.min(input.width, input.height);
+  const radius = minDimension * 0.26;
+  const centerX = input.width * 0.5;
+  const centerY = input.height * 0.55;
+  const rotation =
+    degreesToRadians(input.settings.rotationDeg) +
+    (input.settings.animate ? Math.sin(input.phase * 0.55) * 0.06 : 0);
+  const vertices = buildRegularTriangle(centerX, centerY, radius, rotation);
+  const minEdge = Math.max(1.4, minDimension * profile.minScale);
+  const output: number[] = [];
+  const stack = [
+    vertices[0][0],
+    vertices[0][1],
+    vertices[1][0],
+    vertices[1][1],
+    vertices[2][0],
+    vertices[2][1],
+    maxDepth,
+  ];
+  let processed = 0;
+  let cappedByBudget = false;
+
+  while (stack.length > 0) {
+    const depth = stack.pop() as number;
+    const cy = stack.pop() as number;
+    const cx = stack.pop() as number;
+    const by = stack.pop() as number;
+    const bx = stack.pop() as number;
+    const ay = stack.pop() as number;
+    const ax = stack.pop() as number;
+    const edge = Math.max(
+      Math.hypot(bx - ax, by - ay),
+      Math.hypot(cx - bx, cy - by),
+      Math.hypot(ax - cx, ay - cy),
+    );
+
+    if (depth === 0 || edge < minEdge) {
+      if (output.length / TRIANGLE_STRIDE >= profile.maxElements) {
+        cappedByBudget = true;
+        break;
+      }
+
+      output.push(ax, ay, bx, by, cx, cy, 1 - depth / Math.max(1, maxDepth));
+    } else {
+      const abx = (ax + bx) * 0.5;
+      const aby = (ay + by) * 0.5;
+      const bcx = (bx + cx) * 0.5;
+      const bcy = (by + cy) * 0.5;
+      const cax = (cx + ax) * 0.5;
+      const cay = (cy + ay) * 0.5;
+      const nextDepth = depth - 1;
+
+      stack.push(cax, cay, bcx, bcy, cx, cy, nextDepth);
+      stack.push(abx, aby, bx, by, bcx, bcy, nextDepth);
+      stack.push(ax, ay, abx, aby, cax, cay, nextDepth);
+    }
+
+    processed += 1;
+    if (processed % YIELD_INTERVAL === 0) {
+      await yieldIfNeeded(guard);
+    }
+  }
+
+  return {
+    data: Float32Array.from(output),
+    renderedElements: output.length / TRIANGLE_STRIDE,
+    cappedByBudget,
+  };
 }
 
 function buildRegularTriangle(
@@ -294,23 +361,30 @@ function buildRegularTriangle(
   centerY: number,
   radius: number,
   rotation: number,
-): [Point2D, Point2D, Point2D] {
+): [[number, number], [number, number], [number, number]] {
   return [0, 1, 2].map((index) => {
     const angle = rotation - Math.PI / 2 + (index * Math.PI * 2) / 3;
-    return {
-      x: centerX + Math.cos(angle) * radius,
-      y: centerY + Math.sin(angle) * radius,
-    };
-  }) as [Point2D, Point2D, Point2D];
-}
-
-function midpoint(a: Point2D, b: Point2D): Point2D {
-  return {
-    x: (a.x + b.x) * 0.5,
-    y: (a.y + b.y) * 0.5,
-  };
+    return [
+      centerX + Math.cos(angle) * radius,
+      centerY + Math.sin(angle) * radius,
+    ];
+  }) as [[number, number], [number, number], [number, number]];
 }
 
 function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
+}
+
+async function yieldIfNeeded(guard: BuildGuard): Promise<void> {
+  if (guard.shouldCancel()) {
+    throw new Error(CANCELLED_ERROR);
+  }
+
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
+
+  if (guard.shouldCancel()) {
+    throw new Error(CANCELLED_ERROR);
+  }
 }
