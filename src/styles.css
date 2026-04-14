@@ -154,6 +154,10 @@ button {
   align-items: start;
 }
 
+.fractal-grid {
+  align-items: stretch;
+}
+
 .controls-panel,
 .workspace-shell {
   position: relative;
@@ -171,6 +175,10 @@ button {
   border-radius: 28px;
   max-height: calc(100vh - 44px);
   overflow-y: auto;
+}
+
+.fractal-grid .controls-panel {
+  min-height: calc(100vh - 44px);
 }
 
 .workspace-shell {

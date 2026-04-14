@@ -50,6 +50,23 @@ export function FractalStudio() {
   const statsUpdateAtRef = useRef(0);
   const statsKeyRef = useRef('');
   const hasFrameRef = useRef(false);
+  const maxDepth = fractalDepthLimits[settings.preset];
+  const renderedElements = stats?.renderedElements ?? 0;
+  const detailRatio = stats ? `${(stats.detailRatio * 100).toFixed(2)}%` : '...';
+  const renderQualityLabel = stats?.quality === 'preview' ? 'preview' : 'full';
+  const renderIsSettled = useMemo(
+    () =>
+      settings.preset === settledSettings.preset &&
+      settings.depth === settledSettings.depth &&
+      settings.branchAngleDeg === settledSettings.branchAngleDeg &&
+      settings.shrink === settledSettings.shrink &&
+      settings.rotationDeg === settledSettings.rotationDeg &&
+      settings.lineWidth === settledSettings.lineWidth &&
+      settings.hueShift === settledSettings.hueShift &&
+      settings.glow === settledSettings.glow &&
+      settings.animate === settledSettings.animate,
+    [settings, settledSettings],
+  );
 
   useEffect(() => {
     if (!canvasRef.current || workerClientRef.current) {
@@ -132,13 +149,23 @@ export function FractalStudio() {
     const animate = (time: number) => {
       if (time - lastTick >= ANIMATION_FRAME_MS) {
         lastTick = time;
-        void requestRender(settings, 'preview', time / 1000, !hasFrameRef.current);
+        void requestRender(
+          settings,
+          renderIsSettled ? 'full' : 'preview',
+          time / 1000,
+          !hasFrameRef.current,
+        );
       }
 
       raf = window.requestAnimationFrame(animate);
     };
 
-    void requestRender(settings, 'preview', performance.now() / 1000, !hasFrameRef.current);
+    void requestRender(
+      settings,
+      renderIsSettled ? 'full' : 'preview',
+      performance.now() / 1000,
+      !hasFrameRef.current,
+    );
     raf = window.requestAnimationFrame(animate);
 
     return () => {
@@ -146,22 +173,7 @@ export function FractalStudio() {
         window.cancelAnimationFrame(raf);
       }
     };
-  }, [settings]);
-
-  const maxDepth = fractalDepthLimits[settings.preset];
-  const renderedElements = stats?.renderedElements ?? 0;
-  const detailRatio = stats ? `${(stats.detailRatio * 100).toFixed(2)}%` : '...';
-  const renderQualityLabel = stats?.quality === 'preview' ? 'preview' : 'full';
-  const geometryIsSettled = useMemo(
-    () =>
-      settings.preset === settledSettings.preset &&
-      settings.depth === settledSettings.depth &&
-      settings.branchAngleDeg === settledSettings.branchAngleDeg &&
-      settings.shrink === settledSettings.shrink &&
-      settings.rotationDeg === settledSettings.rotationDeg &&
-      settings.animate === settledSettings.animate,
-    [settings, settledSettings],
-  );
+  }, [settings, renderIsSettled]);
 
   async function requestRender(
     nextSettings: FractalSettings,
@@ -421,7 +433,7 @@ export function FractalStudio() {
               lines={[
                 presetDescription(settings.preset),
                 `Глубина ${settings.depth} из ${maxDepth} для текущего режима.`,
-                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}° · ${geometryIsSettled ? 'full ready' : 'preview pending'}`,
+                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}° · ${renderIsSettled ? 'full ready' : 'preview pending'}`,
               ]}
             />
             <MetricSummaryCard
