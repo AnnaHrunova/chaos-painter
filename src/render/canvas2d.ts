@@ -198,8 +198,8 @@ function drawWorldTrajectory(
       : 0.82;
 
     ctx.beginPath();
-    ctx.moveTo(previous.p4.x * projection.scale, previous.p4.y * projection.scale);
-    ctx.lineTo(current.p4.x * projection.scale, current.p4.y * projection.scale);
+    ctx.moveTo(previous.p2.x * projection.scale, previous.p2.y * projection.scale);
+    ctx.lineTo(current.p2.x * projection.scale, current.p2.y * projection.scale);
     ctx.strokeStyle = stroke;
     ctx.globalAlpha = alpha;
     ctx.lineWidth = lineWidth * (neonMode ? 1.65 : 1);
@@ -231,8 +231,8 @@ function drawDensityMap(
 
   for (let index = startIndex; index <= endIndex; index += stride) {
     const sample = samples[index];
-    const x = projection.centerX + sample.p4.x * projection.scale;
-    const y = projection.centerY + sample.p4.y * projection.scale;
+    const x = projection.centerX + sample.p2.x * projection.scale;
+    const y = projection.centerY + sample.p2.y * projection.scale;
     const column = Math.floor((x / width) * columns);
     const row = Math.floor((y / height) * rows);
 
@@ -282,21 +282,21 @@ function drawPhasePortrait(
   const plotHeight = height - padding * 2;
   const extrema = computeTrajectoryExtrema(samples);
 
-  const xValues = samples.map((sample) => sample.state.theta4);
-  const yValues = samples.map((sample) => sample.state.omega4);
+  const xValues = samples.map((sample) => sample.state.theta2);
+  const yValues = samples.map((sample) => sample.state.omega2);
   const xBounds = paddedBounds(xValues);
   const yBounds = paddedBounds(yValues);
 
   drawPlotFrame(ctx, width, height, padding);
-  drawAxisLabels(ctx, width, height, padding, 'theta4', 'omega4');
+  drawAxisLabels(ctx, width, height, padding, 'theta2', 'omega2');
 
   for (let index = 1; index < samples.length; index += 1) {
     const previous = samples[index - 1];
     const current = samples[index];
-    const x1 = padding + normalize(previous.state.theta4, xBounds.min, xBounds.max) * plotWidth;
-    const y1 = height - padding - normalize(previous.state.omega4, yBounds.min, yBounds.max) * plotHeight;
-    const x2 = padding + normalize(current.state.theta4, xBounds.min, xBounds.max) * plotWidth;
-    const y2 = height - padding - normalize(current.state.omega4, yBounds.min, yBounds.max) * plotHeight;
+    const x1 = padding + normalize(previous.state.theta2, xBounds.min, xBounds.max) * plotWidth;
+    const y1 = height - padding - normalize(previous.state.omega2, yBounds.min, yBounds.max) * plotHeight;
+    const x2 = padding + normalize(current.state.theta2, xBounds.min, xBounds.max) * plotWidth;
+    const y2 = height - padding - normalize(current.state.omega2, yBounds.min, yBounds.max) * plotHeight;
 
     ctx.beginPath();
     ctx.moveTo(x1, y1);
@@ -384,8 +384,8 @@ function buildMethodDeltaSeries(
   for (let index = 0; index < length; index += stride) {
     const current = trajectory.samples[index];
     const reference = referenceTrajectory.samples[index];
-    const dx = current.p4.x - reference.p4.x;
-    const dy = current.p4.y - reference.p4.y;
+    const dx = current.p2.x - reference.p2.x;
+    const dy = current.p2.y - reference.p2.y;
     points.push({
       time: current.time,
       value: Math.sqrt(dx * dx + dy * dy),
@@ -457,8 +457,6 @@ function drawPendulum(
   ctx.moveTo(0, 0);
   ctx.lineTo(sample.p1.x * projection.scale, sample.p1.y * projection.scale);
   ctx.lineTo(sample.p2.x * projection.scale, sample.p2.y * projection.scale);
-  ctx.lineTo(sample.p3.x * projection.scale, sample.p3.y * projection.scale);
-  ctx.lineTo(sample.p4.x * projection.scale, sample.p4.y * projection.scale);
   ctx.stroke();
 
   ctx.beginPath();
@@ -468,16 +466,6 @@ function drawPendulum(
 
   ctx.beginPath();
   ctx.arc(sample.p2.x * projection.scale, sample.p2.y * projection.scale, 10, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(142, 222, 134, 0.92)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(sample.p3.x * projection.scale, sample.p3.y * projection.scale, 11, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(92, 242, 255, 0.95)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(sample.p4.x * projection.scale, sample.p4.y * projection.scale, 12, 0, Math.PI * 2);
   ctx.fillStyle = glowMode ? 'rgba(255, 118, 76, 0.95)' : 'rgba(92, 242, 255, 0.95)';
   ctx.fill();
   ctx.restore();
@@ -631,9 +619,7 @@ function getTrajectoryMaxRadius(trajectory: TrajectorySeries): number {
     trajectory.samples.reduce((largest, sample) => {
       const p1Radius = Math.hypot(sample.p1.x, sample.p1.y);
       const p2Radius = Math.hypot(sample.p2.x, sample.p2.y);
-      const p3Radius = Math.hypot(sample.p3.x, sample.p3.y);
-      const p4Radius = Math.hypot(sample.p4.x, sample.p4.y);
-      return Math.max(largest, p1Radius, p2Radius, p3Radius, p4Radius);
+      return Math.max(largest, p1Radius, p2Radius);
     }, 0) || 2;
 
   maxRadiusCache.set(trajectory, maxRadius);
@@ -676,7 +662,7 @@ function normalize(value: number, min: number, max: number): number {
 
 function overlaySubtitle(renderMode: RenderMode, sample: TrajectorySample): string {
   if (renderMode === 'phasePortrait') {
-    return 'theta4 против omega4';
+    return 'theta2 против omega2';
   }
 
   if (renderMode === 'methodDelta') {

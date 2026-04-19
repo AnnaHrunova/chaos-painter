@@ -24,20 +24,12 @@ export interface StudioSettings {
   playbackStride: number;
   theta1Deg: number;
   theta2Deg: number;
-  theta3Deg: number;
-  theta4Deg: number;
   omega1: number;
   omega2: number;
-  omega3: number;
-  omega4: number;
   m1: number;
   m2: number;
-  m3: number;
-  m4: number;
   l1: number;
   l2: number;
-  l3: number;
-  l4: number;
   g: number;
   lineWidth: number;
   colorMode: ColorMode;
@@ -54,22 +46,14 @@ export const defaultSettings: StudioSettings = {
   trailWindow: 560,
   keepFullPath: true,
   playbackStride: 4,
-  theta1Deg: 132,
-  theta2Deg: -16,
-  theta3Deg: 34,
-  theta4Deg: -12,
+  theta1Deg: 123,
+  theta2Deg: -18,
   omega1: 0,
-  omega2: 0.12,
-  omega3: -0.08,
-  omega4: 0.06,
+  omega2: 0.18,
   m1: 1,
   m2: 1,
-  m3: 1,
-  m4: 1,
   l1: 1,
   l2: 1,
-  l3: 1,
-  l4: 1,
   g: 9.81,
   lineWidth: 2.2,
   colorMode: 'time',
@@ -115,12 +99,8 @@ export function toInitialState(settings: StudioSettings): PendulumState {
   return {
     theta1: degreesToRadians(settings.theta1Deg),
     theta2: degreesToRadians(settings.theta2Deg),
-    theta3: degreesToRadians(settings.theta3Deg),
-    theta4: degreesToRadians(settings.theta4Deg),
     omega1: settings.omega1,
     omega2: settings.omega2,
-    omega3: settings.omega3,
-    omega4: settings.omega4,
   };
 }
 
@@ -128,12 +108,8 @@ export function toPendulumParams(settings: StudioSettings): PendulumParams {
   return {
     m1: settings.m1,
     m2: settings.m2,
-    m3: settings.m3,
-    m4: settings.m4,
     l1: settings.l1,
     l2: settings.l2,
-    l3: settings.l3,
-    l4: settings.l4,
     g: settings.g,
   };
 }

@@ -37,7 +37,7 @@ export default function App() {
     const params = toPendulumParams(settings);
     const nearbyState = {
       ...initialState,
-      theta4: initialState.theta4 + degreesToRadians(0.05),
+      theta2: initialState.theta2 + degreesToRadians(0.05),
     };
     const referenceMethod = getReferenceIntegrator();
     const cache = trajectoryCacheRef.current;
@@ -54,18 +54,10 @@ export default function App() {
         state.omega1.toFixed(8),
         state.theta2.toFixed(8),
         state.omega2.toFixed(8),
-        state.theta3.toFixed(8),
-        state.omega3.toFixed(8),
-        state.theta4.toFixed(8),
-        state.omega4.toFixed(8),
         params.m1.toFixed(6),
         params.m2.toFixed(6),
-        params.m3.toFixed(6),
-        params.m4.toFixed(6),
         params.l1.toFixed(6),
         params.l2.toFixed(6),
-        params.l3.toFixed(6),
-        params.l4.toFixed(6),
         params.g.toFixed(6),
       ].join('|');
 
@@ -153,20 +145,12 @@ export default function App() {
     settings.steps,
     settings.theta1Deg,
     settings.theta2Deg,
-    settings.theta3Deg,
-    settings.theta4Deg,
     settings.omega1,
     settings.omega2,
-    settings.omega3,
-    settings.omega4,
     settings.m1,
     settings.m2,
-    settings.m3,
-    settings.m4,
     settings.l1,
     settings.l2,
-    settings.l3,
-    settings.l4,
     settings.g,
   ]);
 
@@ -293,7 +277,7 @@ export default function App() {
             <h1>Chaos Painter</h1>
             <p>
               Две секции в одном проекте: Pendulum Lab для хаотической динамики
-              четверного маятника и Fractal Forge для плотной рекурсивной
+              двойного маятника и Fractal Forge для плотной рекурсивной
               графики.
             </p>
           </div>
@@ -347,10 +331,10 @@ export default function App() {
                       ? 'Интеграторы'
                       : settings.visualMode === 'chaosArt'
                         ? 'Chaos Art'
-                        : 'Четверной маятник'}
+                        : 'Двойной маятник'}
                   </h2>
                   <p>
-                    Четверной маятник, численные методы и наглядная разница
+                    Двойной маятник, численные методы и наглядная разница
                     между аккуратной интеграцией и грубым развалом траектории.
                   </p>
                 </div>
@@ -375,7 +359,7 @@ export default function App() {
               <section className="phenomenon-note">
                 <div className="panel-kicker">Что происходит</div>
                 <p>
-                  Здесь хаос не декоративный. Четверной маятник быстро
+                  Здесь хаос не декоративный. Двойной маятник быстро
                   разносит малые ошибки, поэтому сразу видно, где интегратор
                   держит систему, а где уже начинается численная отсебятина.
                 </p>

@@ -30,12 +30,12 @@ export function buildTrajectory3DData(
     if (zAxisMode === 'time') {
       z = (index / Math.max(1, total - 1)) * 4.5;
     } else if (zAxisMode === 'speed') {
-      z = (sample.speed4 / maxSpeed) * 4.5;
+      z = (sample.speed2 / maxSpeed) * 4.5;
     } else {
       z = (sample.energyDriftRatio / maxDrift) * 2.8;
     }
 
-    return [sample.p4.x * lengthScale, -sample.p4.y * lengthScale, z];
+    return [sample.p2.x * lengthScale, -sample.p2.y * lengthScale, z];
   });
 
   const colors: [number, number, number][] = visibleSamples.map(
