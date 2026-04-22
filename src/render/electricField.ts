@@ -113,7 +113,7 @@ export function buildCharges(
   const plateCount = 7;
   const gap = unit * 0.24;
   for (let index = 0; index < plateCount; index += 1) {
-    const t = plateCount === 1 ? 0 : index / (plateCount - 1);
+    const t = index / (plateCount - 1);
     const y = height * 0.18 + t * height * 0.64;
     charges.push({ x: cx - gap / 2, y, q: magnitude * 0.48 });
     charges.push({ x: cx + gap / 2, y, q: -magnitude * 0.48 });
