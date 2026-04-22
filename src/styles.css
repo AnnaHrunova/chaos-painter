@@ -158,6 +158,10 @@ button {
   align-items: stretch;
 }
 
+.electric-grid {
+  align-items: stretch;
+}
+
 .controls-panel,
 .workspace-shell {
   position: relative;
@@ -178,6 +182,10 @@ button {
 }
 
 .fractal-grid .controls-panel {
+  min-height: calc(100vh - 44px);
+}
+
+.electric-grid .controls-panel {
   min-height: calc(100vh - 44px);
 }
 
@@ -449,6 +457,7 @@ input[type='range'] {
 
 .trajectory-canvas,
 .fractal-canvas,
+.field-canvas,
 .three-shell,
 .comparison-card canvas {
   display: block;
@@ -460,7 +469,20 @@ input[type='range'] {
   position: relative;
 }
 
+.field-preview-card {
+  position: relative;
+}
+
 .fractal-preview-card::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.field-preview-card::after {
   content: '';
   position: absolute;
   inset: 12px;

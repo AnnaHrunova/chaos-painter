@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { ControlsPanel } from './components/ControlsPanel';
 import { ComparisonView } from './components/ComparisonView';
+import { ElectricStudio } from './components/ElectricStudio';
 import { FractalStudio } from './components/FractalStudio';
 import { MetricsPanel } from './components/MetricsPanel';
 import { StudioViewport } from './components/StudioViewport';
@@ -11,7 +12,7 @@ import { computeDivergenceSeries } from './simulation/comparison';
 import { runTrajectoryBatch, type TrajectoryTask } from './simulation/workerClient';
 import type { MetricPoint, TrajectorySeries } from './physics/types';
 
-type LabView = 'pendulum' | 'fractal';
+type LabView = 'pendulum' | 'fractal' | 'field';
 
 export default function App() {
   const [activeLab, setActiveLab] = useState<LabView>('pendulum');
@@ -276,9 +277,9 @@ export default function App() {
             <div className="panel-kicker">Численные системы и генеративная графика</div>
             <h1>Chaos Painter</h1>
             <p>
-              Две секции в одном проекте: Pendulum Lab для хаотической динамики
-              двойного маятника и Fractal Forge для плотной рекурсивной
-              графики.
+              Три секции в одном проекте: Pendulum Lab для хаотической динамики
+              двойного маятника, Fractal Forge для плотной рекурсивной графики
+              и Field Lab для электрического поля, потенциала и силовых линий.
             </p>
           </div>
           <div aria-label="Выбор лаборатории" className="lab-switcher" role="tablist">
@@ -299,6 +300,15 @@ export default function App() {
               type="button"
             >
               Fractal Forge
+            </button>
+            <button
+              aria-selected={activeLab === 'field'}
+              className={activeLab === 'field' ? 'lab-button lab-button-active' : 'lab-button'}
+              onClick={() => setActiveLab('field')}
+              role="tab"
+              type="button"
+            >
+              Field Lab
             </button>
           </div>
         </header>
@@ -391,8 +401,10 @@ export default function App() {
               />
             </section>
           </div>
-        ) : (
+        ) : activeLab === 'fractal' ? (
           <FractalStudio />
+        ) : (
+          <ElectricStudio />
         )}
       </div>
     </main>
