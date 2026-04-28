@@ -5,10 +5,14 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from 'react';
 import {
   fractalDepthLimits,
   presetDescription,
+  type FractalCamera,
   type FractalQuality,
   type FractalFrameStats,
   type FractalPresetId,
@@ -38,15 +42,26 @@ const defaultSettings: FractalSettings = {
 const ANIMATION_FRAME_MS = 1000 / 15;
 const SETTLE_DELAY_MS = 180;
 const PREVIEW_STATS_INTERVAL_MS = 180;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 1_000_000;
+
+const defaultCamera: FractalCamera = {
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+};
 
 export function FractalStudio() {
   const [settings, setSettings] = useState(defaultSettings);
   const [settledSettings, setSettledSettings] = useState(defaultSettings);
+  const [camera, setCamera] = useState(defaultCamera);
+  const [settledCamera, setSettledCamera] = useState(defaultCamera);
   const [stats, setStats] = useState<FractalFrameStats | null>(null);
   const [isPending, setIsPending] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const workerClientRef = useRef<FractalWorkerClient | null>(null);
   const viewportRef = useRef<{ width: number; height: number } | null>(null);
+  const dragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
   const statsUpdateAtRef = useRef(0);
   const statsKeyRef = useRef('');
   const hasFrameRef = useRef(false);
@@ -64,8 +79,11 @@ export function FractalStudio() {
       settings.lineWidth === settledSettings.lineWidth &&
       settings.hueShift === settledSettings.hueShift &&
       settings.glow === settledSettings.glow &&
-      settings.animate === settledSettings.animate,
-    [settings, settledSettings],
+      settings.animate === settledSettings.animate &&
+      camera.zoom === settledCamera.zoom &&
+      camera.panX === settledCamera.panX &&
+      camera.panY === settledCamera.panY,
+    [settings, settledSettings, camera, settledCamera],
   );
 
   useEffect(() => {
@@ -85,12 +103,13 @@ export function FractalStudio() {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       setSettledSettings(settings);
+      setSettledCamera(camera);
     }, SETTLE_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [settings]);
+  }, [settings, camera]);
 
   useEffect(() => {
     if (!canvasRef.current) {
@@ -107,9 +126,9 @@ export function FractalStudio() {
 
     const observer = new ResizeObserver(() => {
       updateViewport();
-      void requestRender(settings, 'preview', settings.animate ? performance.now() / 1000 : 0, !hasFrameRef.current);
+      void requestRender(settings, camera, 'preview', settings.animate ? performance.now() / 1000 : 0, !hasFrameRef.current);
       if (!settings.animate) {
-        void requestRender(settledSettings, 'full', 0, true);
+        void requestRender(settledSettings, settledCamera, 'full', 0, true);
       }
     });
 
@@ -120,23 +139,23 @@ export function FractalStudio() {
       observer.disconnect();
       window.removeEventListener('resize', updateViewport);
     };
-  }, [settings, settledSettings]);
+  }, [settings, settledSettings, camera, settledCamera]);
 
   useEffect(() => {
     if (settings.animate) {
       return;
     }
 
-    void requestRender(settings, 'preview', 0, !hasFrameRef.current);
-  }, [settings]);
+    void requestRender(settings, camera, 'preview', 0, !hasFrameRef.current);
+  }, [settings, camera]);
 
   useEffect(() => {
     if (settledSettings.animate) {
       return;
     }
 
-    void requestRender(settledSettings, 'full', 0, true);
-  }, [settledSettings]);
+    void requestRender(settledSettings, settledCamera, 'full', 0, true);
+  }, [settledSettings, settledCamera]);
 
   useEffect(() => {
     if (!settings.animate) {
@@ -151,6 +170,7 @@ export function FractalStudio() {
         lastTick = time;
         void requestRender(
           settings,
+          camera,
           renderIsSettled ? 'full' : 'preview',
           time / 1000,
           !hasFrameRef.current,
@@ -162,6 +182,7 @@ export function FractalStudio() {
 
     void requestRender(
       settings,
+      camera,
       renderIsSettled ? 'full' : 'preview',
       performance.now() / 1000,
       !hasFrameRef.current,
@@ -173,10 +194,11 @@ export function FractalStudio() {
         window.cancelAnimationFrame(raf);
       }
     };
-  }, [settings, renderIsSettled]);
+  }, [settings, camera, renderIsSettled]);
 
   async function requestRender(
     nextSettings: FractalSettings,
+    nextCamera: FractalCamera,
     quality: FractalQuality,
     phase: number,
     showBusyIndicator: boolean,
@@ -195,6 +217,7 @@ export function FractalStudio() {
     try {
       const nextStats = await workerClient.render({
         settings: nextSettings,
+        camera: nextCamera,
         width: viewport.width,
         height: viewport.height,
         phase,
@@ -249,6 +272,126 @@ export function FractalStudio() {
     });
   }
 
+  function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const point = getCanvasPoint(event.clientX, event.clientY);
+
+    if (!point) {
+      return;
+    }
+
+    const scale = Math.exp(-event.deltaY * 0.0012);
+    setCamera((current) => zoomCameraAt(current, point.x, point.y, scale));
+  }
+
+  function handleDoubleClick(event: ReactMouseEvent<HTMLDivElement>) {
+    const point = getCanvasPoint(event.clientX, event.clientY);
+
+    if (!point) {
+      return;
+    }
+
+    setCamera((current) => zoomCameraAt(current, point.x, point.y, 2));
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    const viewport = viewportRef.current;
+    const canvas = canvasRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId || !viewport || !canvas) {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const dx = ((event.clientX - drag.x) * viewport.width) / Math.max(1, rect.width);
+    const dy = ((event.clientY - drag.y) * viewport.height) / Math.max(1, rect.height);
+    dragRef.current = { ...drag, x: event.clientX, y: event.clientY };
+    setCamera((current) => ({
+      ...current,
+      panX: current.panX + dx,
+      panY: current.panY + dy,
+    }));
+  }
+
+  function handlePointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+    }
+  }
+
+  function zoomFromCenter(scale: number) {
+    const viewport = viewportRef.current;
+
+    if (!viewport) {
+      setCamera((current) => ({
+        ...current,
+        zoom: clamp(current.zoom * scale, MIN_ZOOM, MAX_ZOOM),
+      }));
+      return;
+    }
+
+    setCamera((current) =>
+      zoomCameraAt(current, viewport.width * 0.5, viewport.height * 0.5, scale),
+    );
+  }
+
+  function resetCamera() {
+    setCamera(defaultCamera);
+  }
+
+  function getCanvasPoint(clientX: number, clientY: number) {
+    const viewport = viewportRef.current;
+    const canvas = canvasRef.current;
+
+    if (!viewport || !canvas) {
+      return null;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) * viewport.width) / Math.max(1, rect.width),
+      y: ((clientY - rect.top) * viewport.height) / Math.max(1, rect.height),
+    };
+  }
+
+  function zoomCameraAt(
+    current: FractalCamera,
+    x: number,
+    y: number,
+    scale: number,
+  ): FractalCamera {
+    const viewport = viewportRef.current;
+    const nextZoom = clamp(current.zoom * scale, MIN_ZOOM, MAX_ZOOM);
+
+    if (!viewport || nextZoom === current.zoom) {
+      return { ...current, zoom: nextZoom };
+    }
+
+    const ratio = nextZoom / current.zoom;
+    const centerX = viewport.width * 0.5;
+    const centerY = viewport.height * 0.5;
+
+    return {
+      zoom: nextZoom,
+      panX: x - centerX - (x - centerX - current.panX) * ratio,
+      panY: y - centerY - (y - centerY - current.panY) * ratio,
+    };
+  }
+
   return (
     <div className="app-grid fractal-grid">
       <aside className="controls-panel">
@@ -298,6 +441,26 @@ export function FractalStudio() {
               setSettings((current) => ({ ...current, glow: checked }))
             }
           />
+        </Section>
+
+        <Section title="Камера">
+          <div className="fractal-camera-panel">
+            <div className="zoom-readout">
+              <span>Zoom</span>
+              <strong>{formatZoom(camera.zoom)}</strong>
+            </div>
+            <div className="fractal-camera-actions">
+              <button className="ghost-button" type="button" onClick={() => zoomFromCenter(0.5)}>
+                -
+              </button>
+              <button className="ghost-button" type="button" onClick={resetCamera}>
+                Reset
+              </button>
+              <button className="ghost-button" type="button" onClick={() => zoomFromCenter(2)}>
+                +
+              </button>
+            </div>
+          </div>
         </Section>
 
         <Section title="Геометрия">
@@ -392,6 +555,7 @@ export function FractalStudio() {
           <div className="hero-stats">
             <StatChip label="режим" value={settings.preset} />
             <StatChip label="глубина" value={`${settings.depth}/${maxDepth}`} />
+            <StatChip label="zoom" value={formatZoom(camera.zoom)} />
             <StatChip label="отрисовано" value={formatCompact(renderedElements)} />
             <StatChip label="деталь" value={detailRatio} />
             <StatChip label="качество" value={renderQualityLabel} />
@@ -408,7 +572,16 @@ export function FractalStudio() {
         </section>
 
         <div className="capture-shell">
-          <div className="viewport-card fractal-preview-card">
+          <div
+            className="viewport-card fractal-preview-card"
+            onDoubleClick={handleDoubleClick}
+            onPointerCancel={handlePointerEnd}
+            onPointerDown={handlePointerDown}
+            onPointerLeave={handlePointerEnd}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onWheel={handleWheel}
+          >
             <canvas className="fractal-canvas" ref={canvasRef} />
             {isPending ? (
               <div className="fractal-status-overlay">
@@ -433,7 +606,7 @@ export function FractalStudio() {
               lines={[
                 presetDescription(settings.preset),
                 `Глубина ${settings.depth} из ${maxDepth} для текущего режима.`,
-                `Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}° · ${renderIsSettled ? 'full ready' : 'preview pending'}`,
+                `Zoom ${formatZoom(camera.zoom)} · Hue shift ${settings.hueShift.toFixed(0)}° · поворот ${settings.rotationDeg.toFixed(0)}° · ${renderIsSettled ? 'full ready' : 'preview pending'}`,
               ]}
             />
             <MetricSummaryCard
@@ -614,4 +787,20 @@ function formatCompact(value: number): string {
   }
 
   return String(value);
+}
+
+function formatZoom(value: number): string {
+  if (value >= 1000) {
+    return `${value.toExponential(1)}x`;
+  }
+
+  if (value >= 10) {
+    return `${value.toFixed(1)}x`;
+  }
+
+  return `${value.toFixed(2)}x`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

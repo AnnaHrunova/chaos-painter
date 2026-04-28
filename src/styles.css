@@ -467,10 +467,53 @@ input[type='range'] {
 
 .fractal-preview-card {
   position: relative;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 .field-preview-card {
   position: relative;
+}
+
+.fractal-preview-card:active {
+  cursor: grabbing;
+}
+
+.fractal-camera-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zoom-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.zoom-readout span {
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.zoom-readout strong {
+  color: #f3fbff;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.fractal-camera-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 8px;
 }
 
 .fractal-preview-card::after {

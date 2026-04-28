@@ -14,6 +14,12 @@ export interface FractalSettings {
 
 export type FractalQuality = 'preview' | 'full';
 
+export interface FractalCamera {
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
 export interface FractalGeometrySettings {
   preset: FractalPresetId;
   depth: number;
@@ -55,6 +61,7 @@ export interface FractalFrameStats {
 
 export interface FractalSceneInput {
   settings: FractalSettings;
+  camera: FractalCamera;
   width: number;
   height: number;
   phase: number;
@@ -131,6 +138,7 @@ export function pickStyleSettings(
 
 export function makeGeometryCacheKey({
   settings,
+  camera,
   width,
   height,
   phase,
@@ -147,6 +155,9 @@ export function makeGeometryCacheKey({
     geometry.branchAngleDeg.toFixed(2),
     geometry.shrink.toFixed(3),
     geometry.rotationDeg.toFixed(2),
+    camera.zoom.toPrecision(6),
+    camera.panX.toFixed(1),
+    camera.panY.toFixed(1),
     width,
     height,
     quality,

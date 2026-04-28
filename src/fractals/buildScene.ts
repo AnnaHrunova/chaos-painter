@@ -37,6 +37,12 @@ const qualityProfiles: Record<
   },
 };
 
+const zoomDepthCaps: Record<FractalPresetId, number> = {
+  tree: 24,
+  koch: 18,
+  sierpinski: 18,
+};
+
 export function isFractalBuildCancelled(error: unknown): boolean {
   return error instanceof Error && error.message === CANCELLED_ERROR;
 }
@@ -45,9 +51,10 @@ export async function buildFractalScene(
   input: FractalSceneInput,
   guard: BuildGuard,
 ): Promise<FractalScene> {
+  const profile = qualityProfiles[input.quality][input.settings.preset];
   const estimatedElements = estimateFractalElements(
     input.settings.preset,
-    input.settings.depth,
+    getEffectiveDepth(input, profile),
   );
 
   if (input.settings.preset === 'tree') {
@@ -109,9 +116,9 @@ async function buildTreeSegments(
   cappedByBudget: boolean;
 }> {
   const profile = qualityProfiles[input.quality].tree;
-  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const maxDepth = getEffectiveDepth(input, profile);
   const minDimension = Math.min(input.width, input.height);
-  const baseLength = minDimension * 0.16;
+  const baseLength = minDimension * 0.16 * input.camera.zoom;
   const branchAngle =
     degreesToRadians(input.settings.branchAngleDeg) *
     (1 + (input.settings.animate ? Math.sin(input.phase * 1.25) * 0.12 : 0));
@@ -119,7 +126,13 @@ async function buildTreeSegments(
   const sway = input.settings.animate ? Math.sin(input.phase * 0.9) * 0.08 : 0;
   const minLength = Math.max(1.2, minDimension * profile.minScale);
   const output: number[] = [];
-  const stack = [input.width * 0.5, input.height * 0.88, baseLength, trunkAngle, maxDepth];
+  const stack = [
+    projectCameraX(input, input.width * 0.5),
+    projectCameraY(input, input.height * 0.88),
+    baseLength,
+    trunkAngle,
+    maxDepth,
+  ];
   let processed = 0;
   let cappedByBudget = false;
 
@@ -191,11 +204,11 @@ async function buildKochSegments(
   cappedByBudget: boolean;
 }> {
   const profile = qualityProfiles[input.quality].koch;
-  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const maxDepth = getEffectiveDepth(input, profile);
   const minDimension = Math.min(input.width, input.height);
-  const radius = minDimension * 0.24;
-  const centerX = input.width * 0.5;
-  const centerY = input.height * 0.54;
+  const radius = minDimension * 0.24 * input.camera.zoom;
+  const centerX = projectCameraX(input, input.width * 0.5);
+  const centerY = projectCameraY(input, input.height * 0.54);
   const rotation =
     degreesToRadians(input.settings.rotationDeg) +
     (input.settings.animate ? Math.sin(input.phase * 0.7) * 0.08 : 0);
@@ -285,11 +298,11 @@ async function buildSierpinskiTriangles(
   cappedByBudget: boolean;
 }> {
   const profile = qualityProfiles[input.quality].sierpinski;
-  const maxDepth = Math.min(input.settings.depth, profile.maxDepth);
+  const maxDepth = getEffectiveDepth(input, profile);
   const minDimension = Math.min(input.width, input.height);
-  const radius = minDimension * 0.26;
-  const centerX = input.width * 0.5;
-  const centerY = input.height * 0.55;
+  const radius = minDimension * 0.26 * input.camera.zoom;
+  const centerX = projectCameraX(input, input.width * 0.5);
+  const centerY = projectCameraY(input, input.height * 0.55);
   const rotation =
     degreesToRadians(input.settings.rotationDeg) +
     (input.settings.animate ? Math.sin(input.phase * 0.55) * 0.06 : 0);
@@ -373,6 +386,28 @@ function buildRegularTriangle(
 
 function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
+}
+
+function getEffectiveDepth(
+  input: FractalSceneInput,
+  profile: QualityProfile,
+): number {
+  const zoomBonus = Math.max(0, Math.floor(Math.log2(Math.max(1, input.camera.zoom)) * 1.35));
+  return Math.min(
+    input.settings.depth + zoomBonus,
+    profile.maxDepth + zoomBonus,
+    zoomDepthCaps[input.settings.preset],
+  );
+}
+
+function projectCameraX(input: FractalSceneInput, x: number): number {
+  const centerX = input.width * 0.5;
+  return centerX + (x - centerX) * input.camera.zoom + input.camera.panX;
+}
+
+function projectCameraY(input: FractalSceneInput, y: number): number {
+  const centerY = input.height * 0.5;
+  return centerY + (y - centerY) * input.camera.zoom + input.camera.panY;
 }
 
 async function yieldIfNeeded(guard: BuildGuard): Promise<void> {
